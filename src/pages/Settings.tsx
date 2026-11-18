@@ -107,11 +107,14 @@ function GoogleCard() {
     const { data, error } = await supabase.functions.invoke('calendar-events', { body: { from, to, refresh: '1', only_mine: '1' } })
     if (error) return setResult('Não foi possível ler a agenda.')
     const st = data?.status?.[me.id]
-    setResult(st === 'ok' ? `Conectado: ${data.events.length} compromisso(s) nos próximos 14 dias.` : `Erro: ${st ?? 'link não encontrado'}`)
+    setResult(st === 'ok' ? `Conectado: ${data.events.length} compromisso(s) nos próximos 14 dias.`
+      : /404/.test(String(st)) ? 'O Google não encontrou essa agenda (404). Confira se colou o "Endereço secreto no formato iCal" (contém /private-…/basic.ics), não o endereço público.'
+      : `Erro: ${st ?? 'link não encontrado'}`)
   }
   const save = async () => {
     const v = url.trim()
     if (!/^(https|webcal):\/\/.+/.test(v)) return toast('Cole o endereço secreto no formato iCal (começa com https://)', 'error')
+    if (/calendar\.google\.com\/.*\/public\/basic\.ics/.test(v)) return setResult('Esse é o endereço público, que só funciona se a agenda estiver aberta para todos. Use o "Endereço secreto no formato iCal" (contém /private-…/basic.ics), logo abaixo na mesma tela do Google.')
     setBusy(true)
     const { error } = await supabase.from('calendar_feeds').upsert({ user_id: me.id, ics_url: v, share_details: share, updated_at: new Date().toISOString() })
     if (error) { setBusy(false); return toast(error.message, 'error') }
