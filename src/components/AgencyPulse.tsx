@@ -49,22 +49,22 @@ export function AgencyPulse() {
     )
   }
   const hl = ins.today[0]
-  const ph = ins.phases[0]
+  const ends = (p: { daysLeft: number; end: string }) => (p.daysLeft === 0 ? 'acaba hoje' : p.daysLeft === 1 ? 'acaba amanhã' : `acaba em ${p.daysLeft} dias (${weekdayLabel(p.end, today).split(',')[0]})`)
+  const low = (t: string) => t.charAt(0).toLowerCase() + t.slice(1)
+  const cycleLines: string[] = ins.phases.slice(0, 3).map((p, i) => i === 0 ? `${hl ? 'E na agência, ' : 'Na agência, '}${low(p.title)} ${ends(p)}.` : `${p.title} ${ends(p)}.`)
+  if (!cycleLines.length && ins.milestones[0]) cycleLines.push(`Próximo marco da agência: ${low(ins.milestones[0].title)}, ${ins.milestones[0].inDays === 1 ? 'amanhã' : `em ${ins.milestones[0].inDays} dias`}.`)
   const tom = ins.tomorrow[0]
-  const cycle = ph
-    ? `${hl ? 'E na agência, ' : 'Na agência, '}${ph.title.charAt(0).toLowerCase() + ph.title.slice(1)} ${ph.daysLeft === 0 ? 'acaba hoje' : ph.daysLeft === 1 ? 'acaba amanhã' : `acaba em ${ph.daysLeft} dias (${weekdayLabel(ph.end, today).split(',')[0]})`}.`
-    : ins.milestones[0] ? `Próximo marco da agência: ${ins.milestones[0].title.charAt(0).toLowerCase() + ins.milestones[0].title.slice(1)}, ${ins.milestones[0].inDays === 1 ? 'amanhã' : `em ${ins.milestones[0].inDays} dias`}.` : ''
   const agenda = hl ? phrase(hl, nome, isOwner || hl.owner_id === me.id, today)
     : tom ? `${nome}, amanhã tem ${prettyTitle(tom.title)}${timeOf(tom) ? ` às ${timeOf(tom)}` : ''}.` : ''
   const tip = processTip(whoFromName(nome), ins.phases, ins.marksToday)
-  if (!agenda && !cycle && !tip) return null
+  if (!agenda && !cycleLines.length && !tip) return null
 
   return (
     <p className="fade-in mt-5 flex w-fit max-w-3xl items-start gap-2.5 rounded-2xl bg-ink px-5 py-3.5 font-serif text-[1.2rem] italic leading-snug text-off shadow-[0_14px_34px_-24px_rgba(21,19,19,.6)] md:text-[1.3rem]" data-testid="agency-pulse">
       <Sparkles size={15} className="mt-1.5 shrink-0 text-[#C98A95] dark:text-[#6A1E33]" />
       <span>
         {agenda && <span className="block">{agenda}</span>}
-        {cycle && <span className={`block ${agenda ? 'mt-1 text-off/70' : ''}`}>{cycle}</span>}
+        {cycleLines.map((c, i) => <span key={i} className={`block ${agenda ? 'text-off/70' : ''} ${i === 0 && agenda ? 'mt-1' : ''}`}>{c}</span>)}
         {tip && <span className="mt-1.5 block not-italic font-sans text-[13.5px] text-off/80">{tip}</span>}
       </span>
     </p>
