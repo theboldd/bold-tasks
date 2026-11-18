@@ -31,6 +31,10 @@ export function CalendarPage() {
   const [who, setWho] = useState('')
   const [showDone, setShowDone] = useState(false)
   const [dragOver, setDragOver] = useState<string | null>(null)
+  // agendas visíveis (como no Google Agenda)
+  const [cals, setCals] = useState<Record<string, boolean>>(() => { try { return { tasks: true, mine: true, other: true, agency: true, ...JSON.parse(localStorage.getItem('bt_cals') || '{}') } } catch { return { tasks: true, mine: true, other: true, agency: true } } })
+  const toggleCal = (k: string) => setCals(c => { const n = { ...c, [k]: !c[k] }; try { localStorage.setItem('bt_cals', JSON.stringify(n)) } catch { /* sem storage */ } return n })
+  const calOf = (e: CalEvent) => (e.source === 'agency' ? 'agency' : e.owner_id === me.id ? 'mine' : 'other')
 
   const days = useMemo(() => {
     if (mode === 'day') return [anchor]
@@ -42,8 +46,8 @@ export function CalendarPage() {
 
   const visibleTasks = useMemo(() => tasks.filter(t => !t.needs_triage && t.scheduled_date
     && (!who || (t.is_shared || t.assigned_to === who)) && (showDone || t.status !== 'concluida')), [tasks, who, showDone])
-  const tasksOn = (d: string) => visibleTasks.filter(t => t.scheduled_date === d)
-  const eventsOn = (d: string) => events.filter(e => (!who || e.owner_id === who) && (e.all_day ? (e.start.slice(0, 10) <= d && d < e.end.slice(0, 10)) : spDate(new Date(e.start)) === d))
+  const tasksOn = (d: string) => (cals.tasks ? visibleTasks.filter(t => t.scheduled_date === d) : [])
+  const eventsOn = (d: string) => events.filter(e => cals[calOf(e)] && (!who || e.owner_id === who || e.source === 'agency') && (e.all_day ? (e.start.slice(0, 10) <= d && d < e.end.slice(0, 10)) : spDate(new Date(e.start)) === d))
 
   const [y, m] = anchor.split('-').map(Number)
   const fmt = (iso: string) => `${Number(iso.slice(8))} ${MONTHS_FULL[Number(iso.slice(5, 7)) - 1].slice(0, 3).toLowerCase()}`
@@ -53,7 +57,14 @@ export function CalendarPage() {
     if (mode === 'week') return setAnchor(addDaysISO(anchor, 7 * dir))
     setAnchor(new Date(Date.UTC(y, m - 1 + dir, 1)).toISOString().slice(0, 10))
   }
-  const hasFeed = Object.keys(status).length > 0
+  const hasFeed = Object.keys(status).length > 0 || events.some(e => e.source === 'agency')
+  const other = members.find(m => m.user_id !== me.id)
+  const calList = [
+    { k: 'tasks', label: 'Pendências', sw: 'bg-bordo' },
+    { k: 'mine', label: 'Minha agenda', sw: 'bg-mute', show: !!status[me.id] },
+    { k: 'other', label: `Agenda da ${firstName(other?.profile.name) || 'outra'}`, sw: 'bg-line border border-dashed border-mute', show: !!other && !!status[other.user_id] },
+    { k: 'agency', label: 'Agenda da agência', sw: 'bg-[#8A2A40]', show: events.some(e => e.source === 'agency') },
+  ].filter(c => c.show !== false)
   const feedErrors = Object.entries(status).filter(([, v]) => v !== 'ok')
 
   if (!tasksLoaded) return <Spinner />
@@ -65,7 +76,7 @@ export function CalendarPage() {
     </button>
   )
   const eventChip = (e: CalEvent, i: number) => (
-    <button type="button" key={`e${i}`} title={e.title} data-testid="cal-event" onClick={ev => { ev.stopPropagation(); setOpenEv(e) }} className={`block w-full truncate rounded-sm border border-line px-1.5 py-0.5 text-left text-[11px] text-mute transition hover:border-mute hover:text-ink ${e.owner_id === me.id || e.source === 'agency' ? 'bg-paper' : 'bg-off italic'}`}>
+    <button type="button" key={`e${i}`} title={e.title} data-testid="cal-event" onClick={ev => { ev.stopPropagation(); setOpenEv(e) }} className={`block w-full truncate rounded-sm border border-line px-1.5 py-0.5 text-left text-[11px] text-mute transition hover:border-mute hover:text-ink ${e.source === 'agency' ? 'border-l-2 border-l-[#8A2A40] bg-bordo-50/60 text-ink/80' : e.owner_id === me.id ? 'bg-paper' : 'bg-off italic'}`}>
       {!e.all_day && <span className="mr-1">{hhmm(spMinutes(new Date(e.start)))}</span>}{e.title}
     </button>
   )
@@ -97,6 +108,18 @@ export function CalendarPage() {
         </div>
       </div>
 
+      {calList.length > 1 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Agendas visíveis" data-testid="cal-toggles">
+          <span className="eyebrow mr-1">Agendas</span>
+          {calList.map(c => (
+            <button key={c.k} aria-pressed={!!cals[c.k]} onClick={() => toggleCal(c.k)} data-testid={`cal-toggle-${c.k}`}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[12.5px] transition ${cals[c.k] ? 'border-ink/20 bg-paper text-ink' : 'border-line text-mute line-through decoration-mute/50'}`}>
+              <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-[4px] ${cals[c.k] ? c.sw : 'border border-mute/50'}`}>{cals[c.k] && <span className="text-[9px] leading-none text-white">✓</span>}</span>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
       {!hasFeed && <div className="mb-4 border-l-2 border-bordo pl-3 text-sm text-mute">Conecte seu Google Agenda em <Link className="text-bordo underline" to="/configuracoes">Configurações</Link> para ver seus compromissos aqui e encaixar as pendências nas janelas livres.</div>}
       {feedErrors.length > 0 && <div className="mb-4 border-l-2 border-late pl-3 text-sm text-late">Não foi possível ler a agenda de {feedErrors.map(([id]) => firstName(members.find(x => x.user_id === id)?.profile.name)).join(', ')}: {feedErrors[0][1]}</div>}
 
@@ -231,7 +254,7 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
               const s = spDate(new Date(e.start)) === d ? spMinutes(new Date(e.start)) : 0
               const en = spDate(new Date(e.end)) === d ? spMinutes(new Date(e.end)) : 24 * 60
               return { key: `e${i}`, start: s, end: Math.max(en, s + 15), node: (
-                <button type="button" onClick={() => onEvent(e)} title={`${e.title} · ${hhmm(s)} às ${hhmm(en)}`} data-testid="grid-event" className={`block h-full w-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:shadow-sm ${e.owner_id === me || e.source === 'agency' ? 'border-line bg-line/60 text-ink/80 hover:border-mute' : 'border-dashed border-line bg-off text-mute italic'}`}>
+                <button type="button" onClick={() => onEvent(e)} title={`${e.title} · ${hhmm(s)} às ${hhmm(en)}`} data-testid="grid-event" className={`block h-full w-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:shadow-sm ${e.source === 'agency' ? 'border-line border-l-2 border-l-[#8A2A40] bg-bordo-50/70 text-ink/80 hover:border-mute' : e.owner_id === me ? 'border-line bg-line/60 text-ink/80 hover:border-mute' : 'border-dashed border-line bg-off text-mute italic'}`}>
                   <div className="font-medium truncate">{e.title}</div><div className="text-[10px] text-mute">{hhmm(s)} às {hhmm(en)}</div>
                 </button>) }
             }),

@@ -5,6 +5,7 @@ import { useWs } from '../lib/store'
 import { addDaysISO, firstName, todayISO } from '../lib/labels'
 import { agencyInsights, prettyTitle, timeOf, useCalendarEvents, weekdayLabel } from '../lib/calendar'
 import type { CalEvent } from '../lib/types'
+import { processTip, whoFromName } from '../lib/process'
 
 function hash(s: string) { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h }
 
@@ -55,12 +56,13 @@ export function AgencyPulse() {
     : ins.milestones[0] ? `Próximo marco da agência: ${ins.milestones[0].title.charAt(0).toLowerCase() + ins.milestones[0].title.slice(1)}, ${ins.milestones[0].inDays === 1 ? 'amanhã' : `em ${ins.milestones[0].inDays} dias`}.` : ''
   const agenda = hl ? phrase(hl, nome, isOwner || hl.owner_id === me.id, today)
     : tom ? `${nome}, amanhã tem ${prettyTitle(tom.title)}${timeOf(tom) ? ` às ${timeOf(tom)}` : ''}.` : ''
-  if (!agenda && !cycle) return null
+  const tip = processTip(whoFromName(nome), ins.phases, ins.marksToday)
+  if (!agenda && !cycle && !tip) return null
 
   return (
-    <p className="mt-5 flex max-w-3xl items-start gap-2.5 border-l-2 border-bordo pl-4 font-serif text-[1.2rem] italic leading-snug text-ink md:text-[1.3rem]" data-testid="agency-pulse">
-      <Sparkles size={15} className="mt-1.5 shrink-0 text-bordo" />
-      <span>{agenda}{agenda && cycle ? ' ' : ''}{cycle && <span className={agenda ? 'text-ink/70' : ''}>{cycle}</span>}</span>
+    <p className="mt-5 flex w-fit max-w-3xl items-start gap-2.5 rounded-2xl bg-ink px-5 py-3.5 font-serif text-[1.2rem] italic leading-snug text-off shadow-[0_14px_34px_-24px_rgba(21,19,19,.6)] md:text-[1.3rem]" data-testid="agency-pulse">
+      <Sparkles size={15} className="mt-1.5 shrink-0 text-[#C98A95] dark:text-[#6A1E33]" />
+      <span>{agenda}{agenda && cycle ? ' ' : ''}{cycle && <span className={agenda ? 'text-off/70' : ''}>{cycle}</span>}{tip && <span className="not-italic font-sans text-[13.5px] text-off/80"> <span className="text-[#C98A95] dark:text-[#6A1E33]">·</span> {tip}</span>}</span>
     </p>
   )
 }

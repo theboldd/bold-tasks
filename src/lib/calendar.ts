@@ -52,7 +52,7 @@ export const weekdayLabel = (d: string, today: string) => {
 
 export const timeOf = (e: CalEvent) => (e.all_day ? null : new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ }).format(new Date(e.start)))
 
-export interface Phase { title: string; start: string; end: string; daysLeft: number; progress: number }
+export interface Phase { title: string; raw: string; start: string; end: string; daysLeft: number; dayIndex: number; progress: number }
 export interface Milestone { title: string; day: string; inDays: number }
 
 export function agencyInsights(events: CalEvent[], today = todayISO()) {
@@ -64,7 +64,7 @@ export function agencyInsights(events: CalEvent[], today = todayISO()) {
     .map(e => {
       const total = Math.max(1, daysBetween(dayOf(e), lastDayOf(e)) + 1)
       const done = daysBetween(dayOf(e), today) + 1
-      return { title: prettyTitle(e.title), start: dayOf(e), end: lastDayOf(e), daysLeft: daysBetween(today, lastDayOf(e)), progress: Math.min(1, done / total) }
+      return { title: prettyTitle(e.title), raw: e.title, start: dayOf(e), end: lastDayOf(e), daysLeft: daysBetween(today, lastDayOf(e)), dayIndex: daysBetween(dayOf(e), today), progress: Math.min(1, done / total) }
     })
     .sort((a, b) => a.daysLeft - b.daysLeft)
   // marcos: processos de 1 dia (ou começo de fase) nos próximos 10 dias
@@ -83,7 +83,8 @@ export function agencyInsights(events: CalEvent[], today = todayISO()) {
   const rank = (e: CalEvent) => (/palestra|congresso|evento|semin|confra|lan[cç]amento|feira/i.test(e.title) ? 0 : /presencial|grava|entrevista|viagem|workshop|aula|live|podcast/i.test(e.title) ? 1 : 2)
   todayHl.sort((a, b) => rank(a) - rank(b) || a.start.localeCompare(b.start))
   const uniq = (l: CalEvent[]) => { const k = new Set<string>(); return l.filter(e => { const x = e.title + dayOf(e); if (k.has(x)) return false; k.add(x); return true }) }
-  return { phases, milestones: milestones.slice(0, 4), today: uniq(todayHl), tomorrow: uniq(tomorrowHl), soon: uniq(soonHl).slice(0, 3) }
+  const marksToday = pool.filter(e => e.all_day && PROCESS.test(e.title) && daysBetween(e.start.slice(0, 10), e.end.slice(0, 10)) < 2 && dayOf(e) === today).map(e => e.title)
+  return { phases, marksToday, milestones: milestones.slice(0, 4), today: uniq(todayHl), tomorrow: uniq(tomorrowHl), soon: uniq(soonHl).slice(0, 3) }
 }
 
 export const monthLabel = (iso: string) => MONTHS[Number(iso.slice(5, 7)) - 1]
