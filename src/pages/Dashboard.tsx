@@ -73,7 +73,7 @@ export function Dashboard() {
         <p className="mt-3 text-mute max-w-xl">
           {s.myToday.length
             ? <>Hoje você tem <strong className="text-ink">{s.myToday.length} {s.myToday.length === 1 ? 'pendência' : 'pendências'}</strong>
-                {s.myToday.some(t => t.rollover_count > 0) && <> — {s.myToday.filter(t => t.rollover_count > 0).length} vieram de dias anteriores</>}
+                {(() => { const n = s.myToday.filter(t => t.rollover_count > 0).length; return n > 0 && <> — {n} {n === 1 ? 'veio' : 'vieram'} de dias anteriores</> })()}
                 {s.mine.some(t => isOverdue(t, today)) && <>, e <strong className="text-late">{s.mine.filter(t => isOverdue(t, today)).length} com prazo final vencido</strong></>}.
                 {' '}O que não for concluído hoje passa para amanhã automaticamente.</>
             : 'Seu dia está livre. Bom momento para adiantar as próximas.'}

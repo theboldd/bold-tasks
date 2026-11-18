@@ -223,7 +223,7 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
             }),
             ...tasksOn(d).filter(t => effectiveTime(t)).map(t => {
               const [hh, mm] = effectiveTime(t)!.split(':').map(Number); const end = hh * 60 + mm
-              return { key: t.id, start: end - 30, end, node: (
+              return { key: t.id, start: end - 45, end, node: (
                 <button draggable onDragStart={e => e.dataTransfer.setData('text/task', t.id)} onClick={() => onOpen(t.id)} data-testid="grid-task"
                   className={`h-full w-full overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm ${t.status === 'concluida' ? 'border-l-ok bg-ok-50 text-mute line-through' : isTimePassed(t) ? 'border-l-late bg-late-50 text-late' : 'border-l-bordo bg-bordo-50 text-bordo'}`}>
                   <div className="font-semibold truncate">{t.title}</div><div className="text-[10px] opacity-80">{timeLabel(t)}</div>

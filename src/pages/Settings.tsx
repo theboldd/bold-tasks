@@ -46,7 +46,7 @@ export function SettingsPage() {
       </section>
       <section className="card p-6">
         <h2 className="font-serif text-xl mb-1">Workspace</h2>
-        <p className="text-sm text-mute mb-4">{workspace.name} · sincronização {realtimeStatus === 'SUBSCRIBED' ? <span className="text-ok">ativa</span> : <span className="text-late">{realtimeStatus.toLowerCase()}</span>}</p>
+        <p className="text-sm text-mute mb-4">{workspace.name} · sincronização {realtimeStatus === 'SUBSCRIBED' ? <span className="text-ok">em tempo real</span> : <span className="text-wait">reconectando…</span>}</p>
         <ul className="divide-y divide-line text-sm">
           {members.map(m => <li key={m.user_id} className="flex justify-between py-2"><span>{m.profile.name}</span><span className="text-mute">{m.profile.email}</span></li>)}
         </ul>
