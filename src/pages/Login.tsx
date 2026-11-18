@@ -6,6 +6,7 @@ export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
+  const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
@@ -20,16 +21,15 @@ export function Login() {
     setBusy(true)
     try {
       if (mode === 'first') {
-        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password })
+        const { data, error } = await supabase.functions.invoke('first-access', { body: { email: email.trim(), password, code: code.trim() } })
         if (error) {
-          if (/not authorized|não autorizado|Database error/i.test(error.message)) throw new Error('Este e-mail não está autorizado no BOLD TASKS.')
-          if (/already registered/i.test(error.message)) throw new Error('Este e-mail já tem conta. Use “Entrar”.')
-          throw error
+          let msg = 'Não foi possível criar a conta.'
+          try { msg = (await (error as { context: Response }).context.json()).error ?? msg } catch { /* noop */ }
+          throw new Error(msg)
         }
-        if (!data.session) {
-          const { error: e2 } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
-          if (e2) setInfo('Conta criada. Confirme o e-mail recebido e depois entre com sua senha.')
-        }
+        if (!data?.ok) throw new Error(data?.error ?? 'Não foi possível criar a conta.')
+        const { error: e2 } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+        if (e2) throw new Error('Conta criada. Entre com seu e-mail e senha.')
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw new Error(/Invalid login/i.test(error.message) ? 'E-mail ou senha incorretos.' : /not confirmed/i.test(error.message) ? 'E-mail ainda não confirmado.' : error.message)
@@ -67,6 +67,8 @@ export function Login() {
           <label className="eyebrow mb-1.5 block" htmlFor="password">Senha</label>
           <input id="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required className="field mb-4" value={password} onChange={e => setPassword(e.target.value)} />
           {mode === 'first' && <>
+            <label className="eyebrow mb-1.5 block" htmlFor="code">Código de convite</label>
+            <input id="code" required autoComplete="one-time-code" className="field mb-4 uppercase tracking-[.3em]" maxLength={12} value={code} onChange={e => setCode(e.target.value)} />
             <label className="eyebrow mb-1.5 block" htmlFor="password2">Repita a senha</label>
             <input id="password2" type="password" autoComplete="new-password" required className="field mb-4" value={password2} onChange={e => setPassword2(e.target.value)} />
           </>}
@@ -78,7 +80,7 @@ export function Login() {
               ? <>Primeira vez aqui? <button type="button" className="text-bordo underline-offset-2 hover:underline" onClick={() => { setMode('first'); setError('') }}>Criar minha senha</button></>
               : <>Já tem conta? <button type="button" className="text-bordo underline-offset-2 hover:underline" onClick={() => { setMode('login'); setError('') }}>Entrar</button></>}
           </p>
-          {mode === 'first' && <p className="mt-3 text-center text-xs text-mute">Apenas e-mails autorizados no workspace conseguem criar conta.</p>}
+          {mode === 'first' && <p className="mt-3 text-center text-xs text-mute">Use o código de convite que você recebeu. Apenas e-mails autorizados conseguem criar conta.</p>}
         </form>
       </section>
     </div>
