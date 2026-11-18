@@ -3,20 +3,37 @@ import { supabase } from './supabase'
 import { addDaysISO, todayISO } from './labels'
 import type { CalEvent } from './types'
 
-/** Eventos do Google Agenda (pessoais + agência) no intervalo [from, to], atualizados a cada 5 min. */
-export function useCalendarEvents(from: string, to: string) {
-  const [events, setEvents] = useState<CalEvent[]>([])
-  const [status, setStatus] = useState<Record<string, string>>({})
-  const [agencyStatus, setAgencyStatus] = useState<Record<string, string>>({})
+type CalCache = { at: number; events: CalEvent[]; status: Record<string, string>; agency: Record<string, string> }
+const readCache = (k: string): CalCache | null => {
+  try { const c = JSON.parse(localStorage.getItem(k) || 'null') as CalCache | null; return c && Date.now() - c.at < 12 * 3600e3 ? c : null } catch { return null }
+}
+
+/** Eventos do Google Agenda (pessoais + agência) no intervalo [from, to], atualizados a cada 5 min.
+ *  Mostra na hora a última leitura salva neste aparelho e atualiza em segundo plano. */
+export function useCalendarEvents(from: string, to: string, cacheKey?: string) {
+  const key = cacheKey ?? `bt_cal_${from}_${to}`
+  const cached = readCache(key)
+  const [events, setEvents] = useState<CalEvent[]>(cached?.events ?? [])
+  const [status, setStatus] = useState<Record<string, string>>(cached?.status ?? {})
+  const [agencyStatus, setAgencyStatus] = useState<Record<string, string>>(cached?.agency ?? {})
   const [loading, setLoading] = useState(false)
-  const [loaded, setLoaded] = useState(false)
+  const [loaded, setLoaded] = useState(!!cached)
+  useEffect(() => {
+    const c = readCache(key)
+    if (c) { setEvents(c.events); setStatus(c.status); setAgencyStatus(c.agency); setLoaded(true) }
+  }, [key])
   const load = useCallback(async (refresh = false) => {
     setLoading(true)
     const { data, error } = await supabase.functions.invoke('calendar-events', { body: { from: `${from}T00:00:00-03:00`, to: `${addDaysISO(to, 1)}T00:00:00-03:00`, refresh: refresh ? '1' : undefined } })
     setLoading(false); setLoaded(true)
     if (error || !data) return
     setEvents(data.events ?? []); setStatus(data.status ?? {}); setAgencyStatus(data.agency_status ?? {})
-  }, [from, to])
+    try {
+      // guarda só a leitura mais recente de cada intervalo (evita encher o armazenamento)
+      Object.keys(localStorage).filter(k => k.startsWith('bt_cal_2') && k !== key).slice(0, -6).forEach(k => localStorage.removeItem(k))
+      localStorage.setItem(key, JSON.stringify({ at: Date.now(), events: data.events ?? [], status: data.status ?? {}, agency: data.agency_status ?? {} }))
+    } catch { /* armazenamento cheio */ }
+  }, [from, to, key])
   useEffect(() => { load(); const i = setInterval(() => load(), 5 * 60 * 1000); return () => clearInterval(i) }, [load])
   return { events, status, agencyStatus, loading, loaded, reload: load }
 }

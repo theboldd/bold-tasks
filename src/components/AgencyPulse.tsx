@@ -34,7 +34,7 @@ function phrase(e: CalEvent, nome: string, personal: boolean, today: string) {
 export function AgencyPulse() {
   const { me, members } = useWs()
   const today = todayISO()
-  const { events, status, agencyStatus, loaded } = useCalendarEvents(addDaysISO(today, -40), addDaysISO(today, 12))
+  const { events, status, agencyStatus, loaded } = useCalendarEvents(addDaysISO(today, -40), addDaysISO(today, 12), 'bt_cal_dash')
   const ins = useMemo(() => agencyInsights(events, today), [events, today])
   const isOwner = members.find(m => m.user_id === me.id)?.role === 'owner'
   const nome = firstName(me.name)
@@ -60,7 +60,7 @@ export function AgencyPulse() {
   if (!agenda && !cycle && !tip) return null
 
   return (
-    <p className="mt-5 flex w-fit max-w-3xl items-start gap-2.5 rounded-2xl bg-ink px-5 py-3.5 font-serif text-[1.2rem] italic leading-snug text-off shadow-[0_14px_34px_-24px_rgba(21,19,19,.6)] md:text-[1.3rem]" data-testid="agency-pulse">
+    <p className="fade-in mt-5 flex w-fit max-w-3xl items-start gap-2.5 rounded-2xl bg-ink px-5 py-3.5 font-serif text-[1.2rem] italic leading-snug text-off shadow-[0_14px_34px_-24px_rgba(21,19,19,.6)] md:text-[1.3rem]" data-testid="agency-pulse">
       <Sparkles size={15} className="mt-1.5 shrink-0 text-[#C98A95] dark:text-[#6A1E33]" />
       <span>
         {agenda && <span className="block">{agenda}</span>}
