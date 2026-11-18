@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { X } from 'lucide-react'
-import { formatDue, initials, isOverdue, statusLabel, priorityLabel } from '../lib/labels'
+import { dayLabel, formatDue, initials, isOverdue, isTimePassed, statusLabel, priorityLabel, timeLabel } from '../lib/labels'
 import type { Member, Task } from '../lib/types'
 
 const AV_COLORS = ['bg-bordo text-off', 'bg-ink text-off', 'bg-[#85817D] text-white', 'bg-[#6b4a3a] text-white']
@@ -99,4 +99,43 @@ export function Spinner({ label = 'Carregando' }: { label?: string }) {
       <span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-bordo" />{label}…
     </div>
   )
+}
+
+/** Dia para fazer + horário ("Hoje · até 15h") */
+export function DayTimeChip({ task, showDay = true }: { task: Task; showDay?: boolean }) {
+  if (task.needs_triage) return null
+  const tl = timeLabel(task)
+  const passed = isTimePassed(task)
+  if (!showDay && !tl) return null
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs ${passed ? 'text-late font-medium' : 'text-ink/80'}`} title={passed ? 'O horário passou' : undefined}>
+      {showDay && <span>{dayLabel(task.scheduled_date)}</span>}
+      {showDay && tl && <span className="text-mute">·</span>}
+      {tl && <span>{tl}</span>}
+    </span>
+  )
+}
+export function RolloverBadge({ task }: { task: Task }) {
+  if (!task.rollover_count || task.status === 'concluida') return null
+  return <span title={`Transferida automaticamente ${task.rollover_count} vez(es)`} className="rounded bg-wait-50 px-1.5 py-0.5 text-[10px] font-semibold text-wait">↻ {task.rollover_count}</span>
+}
+export function SharedAvatars({ members, parts }: { members: Member[]; parts: { user_id: string; completed_at: string | null }[] }) {
+  return (
+    <span className="inline-flex -space-x-1.5" title="Pendência das duas">
+      {members.map((m, i) => {
+        const done = parts.find(p => p.user_id === m.user_id)?.completed_at
+        return (
+          <span key={m.user_id} className={`relative rounded-full ring-2 ring-paper ${done ? 'opacity-50' : ''}`}>
+            <Avatar name={m.profile.name} idx={i % 4} size={24} title={`${m.profile.name}${done ? ' — parte concluída' : ' — falta concluir'}`} />
+            {done && <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-ok text-[8px] text-white">✓</span>}
+          </span>
+        )
+      })}
+    </span>
+  )
+}
+export function DeadlineBadge({ task }: { task: Task }) {
+  if (!task.due_date) return null
+  const late = isOverdue(task)
+  return <span className={`text-[11px] ${late ? 'font-semibold text-late' : 'text-mute'}`}>{late ? 'Atrasada · ' : 'Prazo '}{formatDue(task.due_date)}</span>
 }

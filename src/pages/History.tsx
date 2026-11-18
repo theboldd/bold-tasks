@@ -16,6 +16,8 @@ const ACTIONS = [
   { value: 'commented', label: 'Comentários' },
   { value: 'completed', label: 'Conclusões' },
   { value: 'reopened', label: 'Reaberturas' },
+  { value: 'part_completed', label: 'Partes concluídas' },
+  { value: 'rolled_over', label: 'Transferências automáticas' },
   { value: 'deleted', label: 'Exclusões' },
 ]
 

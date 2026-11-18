@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { Zap } from 'lucide-react'
 import { Modal } from './ui'
 import { useToast, useWs } from '../lib/store'
-import { PRIORITY, STATUS } from '../lib/labels'
+import { PRIORITY, STATUS, todayISO } from '../lib/labels'
+import { TimeField, type TimeValue } from './TimeField'
 import { categoryOptions, decodeCategory } from '../lib/filters'
 import type { Priority, Status } from '../lib/types'
 
-export interface NewTaskDefaults { assigned_to?: string; category?: string; status?: Status; due_date?: string; mode?: 'full' | 'quick' }
+export interface NewTaskDefaults { assigned_to?: string; category?: string; status?: Status; due_date?: string; scheduled_date?: string; due_time?: string; mode?: 'full' | 'quick' }
 
 export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: boolean; onClose: () => void; defaults?: NewTaskDefaults; onCreated?: (id: string) => void }) {
   const { members, createTask, quickCapture } = useWs()
@@ -16,6 +17,8 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
   const [assigned, setAssigned] = useState('')
   const [category, setCategory] = useState('the_bold')
   const [due, setDue] = useState('')
+  const [day, setDay] = useState(todayISO())
+  const [time, setTime] = useState<TimeValue>({ due_time: null, time_window: null })
   const [priority, setPriority] = useState<Priority>('normal')
   const [status, setStatus] = useState<Status>('a_fazer')
   const [description, setDescription] = useState('')
@@ -31,6 +34,8 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
     setAssigned(defaults?.assigned_to ?? '')
     setCategory(defaults?.category ?? 'the_bold')
     setDue(defaults?.due_date ?? '')
+    setDay(defaults?.scheduled_date ?? todayISO())
+    setTime({ due_time: defaults?.due_time ?? null, time_window: null })
     setPriority('normal')
     setStatus(defaults?.status ?? 'a_fazer')
     setTimeout(() => firstRef.current?.focus(), 30)
@@ -43,9 +48,11 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
     setTried(true)
     if (!title.trim() || !assigned || !category) return
     setSaving(true)
+    const both = assigned === 'both'
     const t = await createTask({
-      title: title.trim(), assigned_to: assigned, ...decodeCategory(category),
-      due_date: due || null, priority, status, description: description.trim() || null,
+      title: title.trim(), assigned_to: both ? null : assigned, is_shared: both, ...decodeCategory(category),
+      due_date: due || null, scheduled_date: day || todayISO(), ...time,
+      priority, status, description: description.trim() || null,
     })
     setSaving(false)
     if (t) { toast('Pendência criada'); onClose(); onCreated?.(t.id) }
@@ -88,14 +95,15 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
           <div>
             <span className="eyebrow mb-1.5 block">Responsável *</span>
             <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Responsável">
-              {members.map(m => (
-                <button type="button" role="radio" aria-checked={assigned === m.user_id} key={m.user_id} onClick={() => setAssigned(m.user_id)}
-                  className={`rounded-full border px-4 py-1.5 text-sm transition ${assigned === m.user_id ? 'border-bordo bg-bordo text-off' : `border-line bg-paper hover:border-ink ${tried && !assigned ? 'border-late' : ''}`}`}>
-                  {m.profile.name}
+              {[...members.map(m => ({ id: m.user_id, label: m.profile.name })), ...(members.length > 1 ? [{ id: 'both', label: 'Ambas' }] : [])].map(o => (
+                <button type="button" role="radio" aria-checked={assigned === o.id} key={o.id} onClick={() => setAssigned(o.id)}
+                  className={`rounded-full border px-4 py-1.5 text-sm transition ${assigned === o.id ? 'border-bordo bg-bordo text-off' : `border-line bg-paper hover:border-ink ${tried && !assigned ? 'border-late' : ''}`}`}>
+                  {o.label}
                 </button>
               ))}
             </div>
             {tried && !assigned && <p className="mt-1 text-xs text-late">Selecione quem vai executar.</p>}
+            {assigned === 'both' && <p className="mt-1 text-xs text-mute">Cada uma conclui a sua parte. Quando uma termina, a outra é avisada; quando as duas terminam, a pendência fecha.</p>}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -105,7 +113,15 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
               </select>
             </div>
             <div>
-              <label className="eyebrow mb-1.5 block" htmlFor="nt-due">Prazo</label>
+              <label className="eyebrow mb-1.5 block" htmlFor="nt-day">Dia para fazer</label>
+              <input id="nt-day" type="date" className="field" value={day} onChange={e => setDay(e.target.value)} />
+            </div>
+            <div className="sm:col-span-2">
+              <span className="eyebrow mb-1.5 block">Até que horas</span>
+              <TimeField value={time} onChange={setTime} idPrefix="nt" />
+            </div>
+            <div>
+              <label className="eyebrow mb-1.5 block" htmlFor="nt-due">Prazo final</label>
               <input id="nt-due" type="date" className="field" value={due} onChange={e => setDue(e.target.value)} />
             </div>
             <div>

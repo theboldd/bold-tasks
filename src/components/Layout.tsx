@@ -10,7 +10,7 @@ import { TaskDrawer } from './TaskDrawer'
 import { Avatar, memberColorIndex } from './ui'
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { me, other, tasks, members, workspace, workspaces, switchWorkspace } = useWs()
+  const { me, other, tasks, members, workspace, workspaces, switchWorkspace, isMine } = useWs()
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const loc = useLocation()
@@ -44,13 +44,13 @@ export function Layout({ children }: { children: ReactNode }) {
     const open = tasks.filter(isOpen)
     return {
       all: open.length,
-      mine: open.filter(t => t.assigned_to === me.id).length,
-      other: other ? open.filter(t => t.assigned_to === other.user_id).length : 0,
+      mine: open.filter(t => isMine(t, me.id)).length,
+      other: other ? open.filter(t => isMine(t, other.user_id)).length : 0,
       bold: open.filter(t => t.category === 'the_bold').length,
       waiting: open.filter(t => t.status === 'aguardando').length,
       triage: open.filter(t => t.needs_triage).length,
     }
-  }, [tasks, me.id, other])
+  }, [tasks, me.id, other, isMine])
 
   const otherLabel = other ? `Pendências da ${firstName(other.profile.name)}` : 'Pendências da equipe'
   const nav = [

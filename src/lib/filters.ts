@@ -1,4 +1,4 @@
-import { PRIORITY_RANK, addDaysISO, isOverdue, todayISO, weekStartISO } from './labels'
+import { PRIORITY_RANK, addDaysISO, effectiveTime, isOverdue, todayISO, weekStartISO } from './labels'
 import type { Member, Task } from './types'
 
 export interface Filters {
@@ -9,12 +9,13 @@ export interface Filters {
   status: string // '' | 'open' | Status
   priority: string
   due: string // '' | 'today' | 'week' | 'next7' | 'month'
+  day: string // '' | 'today' | 'tomorrow' | 'week' | 'none'
   overdue: boolean
   noDue: boolean
   triage: boolean
-  sort: 'due' | 'priority' | 'created'
+  sort: 'day' | 'due' | 'priority' | 'created'
 }
-export const EMPTY_FILTERS: Filters = { q: '', assigned: '', createdBy: '', category: '', status: 'open', priority: '', due: '', overdue: false, noDue: false, triage: false, sort: 'due' }
+export const EMPTY_FILTERS: Filters = { q: '', assigned: '', createdBy: '', category: '', status: 'open', priority: '', due: '', day: '', overdue: false, noDue: false, triage: false, sort: 'day' }
 
 export function categoryOptions(members: Member[]) {
   return [
@@ -42,7 +43,8 @@ export function applyFilters(tasks: Task[], f: Filters) {
   const q = norm(f.q.trim())
   let out = tasks.filter(t => {
     if (q && !norm(`${t.title} ${t.description ?? ''} #${t.seq}`).includes(q)) return false
-    if (f.assigned === 'none' ? t.assigned_to !== null : f.assigned && t.assigned_to !== f.assigned) return false
+    if (f.assigned === 'none' ? t.assigned_to !== null : f.assigned && !(t.is_shared || t.assigned_to === f.assigned)) return false
+    if (f.assigned === 'shared' && !t.is_shared) return false
     if (f.createdBy && t.created_by !== f.createdBy) return false
     if (f.category && encodeCategory(t) !== f.category) return false
     if (f.status === 'open' && t.status === 'concluida') return false
@@ -51,6 +53,13 @@ export function applyFilters(tasks: Task[], f: Filters) {
     if (f.overdue && !isOverdue(t, today)) return false
     if (f.noDue && t.due_date) return false
     if (f.triage && !t.needs_triage) return false
+    if (f.day) {
+      const d = t.scheduled_date
+      if (f.day === 'none' ? !!d : !d) return false
+      if (f.day === 'today' && d !== today) return false
+      if (f.day === 'tomorrow' && d !== addDaysISO(today, 1)) return false
+      if (f.day === 'week') { const ws = weekStartISO(today); if (d! < ws || d! > addDaysISO(ws, 6)) return false }
+    }
     if (f.due) {
       if (!t.due_date) return false
       const d = t.due_date
@@ -63,10 +72,19 @@ export function applyFilters(tasks: Task[], f: Filters) {
   })
   out = [...out].sort((a, b) => {
     if (f.sort === 'created') return b.created_at.localeCompare(a.created_at)
+    if (f.sort === 'day') return dayCmp(a, b)
     if (f.sort === 'priority') return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || dueCmp(a, b)
     return dueCmp(a, b) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
   })
   return out
+}
+/** dia para fazer → horário → prioridade */
+export function dayCmp(a: Task, b: Task) {
+  const da = a.scheduled_date ?? '9999', db = b.scheduled_date ?? '9999'
+  if (da !== db) return da.localeCompare(db)
+  const ta = effectiveTime(a) ?? '99', tb = effectiveTime(b) ?? '99'
+  if (ta !== tb) return ta.localeCompare(tb)
+  return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || b.created_at.localeCompare(a.created_at)
 }
 function dueCmp(a: Task, b: Task) {
   if (a.due_date === b.due_date) return b.created_at.localeCompare(a.created_at)

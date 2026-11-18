@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Check, RotateCcw, Trash2, X, Send } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast, useWs } from '../lib/store'
-import { PRIORITY, STATUS, formatDateTime, isOverdue, timeAgo } from '../lib/labels'
+import { PRIORITY, STATUS, formatDateTime, isOverdue, isTimePassed, timeAgo, todayISO } from '../lib/labels'
+import { TimeField } from './TimeField'
 import { categoryLabel, categoryOptions, decodeCategory, encodeCategory } from '../lib/filters'
 import { describeActivity } from '../lib/activity'
 import type { Activity, Comment, Priority, Status, Task } from '../lib/types'
@@ -135,7 +136,7 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
 }
 
 function TaskBody({ task }: { task: Task }) {
-  const { members, memberName, updateTask } = useWs()
+  const { members, memberName, updateTask, toggleDone, partsOf, me } = useWs()
   const toast = useToast()
   const [title, setTitle] = useState(task.title)
   const [desc, setDesc] = useState(task.description ?? '')
@@ -147,6 +148,8 @@ function TaskBody({ task }: { task: Task }) {
 
   const done = task.status === 'concluida'
   const late = isOverdue(task)
+  const parts = partsOf(task.id)
+  const myPartDone = !!parts.find(p => p.user_id === me.id)?.completed_at
   const save = (patch: Parameters<typeof updateTask>[1]) => updateTask(task.id, patch)
 
   return (
@@ -155,6 +158,9 @@ function TaskBody({ task }: { task: Task }) {
         <StatusPill status={task.status} />
         {task.needs_triage && <TriageBadge />}
         {late && <span className="rounded bg-late-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-late">Atrasada</span>}
+        {isTimePassed(task) && <span className="rounded bg-late-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-late">Horário passou</span>}
+        {task.is_shared && <span className="rounded bg-bordo-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-bordo">Das duas</span>}
+        {task.rollover_count > 0 && !done && <span className="rounded bg-wait-50 px-1.5 py-0.5 text-[10px] font-semibold text-wait">↻ transferida {task.rollover_count}×</span>}
       </div>
       <textarea aria-label="Título" className={`w-full resize-none bg-transparent font-serif text-[1.7rem] leading-tight outline-none ${done ? 'text-mute line-through decoration-1' : ''}`}
         rows={Math.min(4, Math.ceil(title.length / 34) || 1)} value={title} onChange={e => setTitle(e.target.value)}
@@ -181,19 +187,43 @@ function TaskBody({ task }: { task: Task }) {
       )}
 
       <div className="mt-5 flex flex-wrap gap-2">
-        {!done ? (
-          <button className="btn btn-primary" disabled={task.needs_triage} title={task.needs_triage ? 'Classifique antes de concluir' : undefined} onClick={() => save({ status: 'concluida' })}><Check size={16} />Concluir</button>
+        {done ? (
+          <button className="btn btn-ghost" onClick={() => toggleDone(task)}><RotateCcw size={15} />Reabrir</button>
+        ) : task.is_shared ? (
+          myPartDone
+            ? <button className="btn btn-ghost" onClick={() => toggleDone(task)}><RotateCcw size={15} />Reabrir minha parte</button>
+            : <button className="btn btn-primary" onClick={() => toggleDone(task)}><Check size={16} />Concluir minha parte</button>
         ) : (
-          <button className="btn btn-ghost" onClick={() => save({ status: 'a_fazer' })}><RotateCcw size={15} />Reabrir</button>
+          <button className="btn btn-primary" disabled={task.needs_triage} title={task.needs_triage ? 'Classifique antes de concluir' : undefined} onClick={() => toggleDone(task)}><Check size={16} />Concluir</button>
         )}
       </div>
+
+      {task.is_shared && (
+        <div className="mt-4 rounded-2xl border border-line bg-off/60 p-3" data-testid="parts">
+          <div className="eyebrow mb-2">Partes</div>
+          <ul className="space-y-1.5 text-sm">
+            {members.map(m => {
+              const p = parts.find(x => x.user_id === m.user_id)
+              return (
+                <li key={m.user_id} className="flex items-center gap-2">
+                  <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${p?.completed_at ? 'bg-ok text-white' : 'border border-[#cfc7bd]'}`}>{p?.completed_at ? '✓' : ''}</span>
+                  <span>{m.profile.name}</span>
+                  <span className="text-xs text-mute">{p?.completed_at ? `concluiu · ${formatDateTime(p.completed_at)}` : 'falta concluir'}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
 
       <dl className="mt-6 grid grid-cols-[120px_1fr] items-center gap-x-3 gap-y-3 text-sm">
         {!task.needs_triage && <>
           <dt className="text-mute">Responsável</dt>
           <dd>
-            <select aria-label="Responsável" className="field py-1.5" value={task.assigned_to ?? ''} onChange={e => save({ assigned_to: e.target.value })}>
+            <select aria-label="Responsável" className="field py-1.5" value={task.is_shared ? 'both' : task.assigned_to ?? ''}
+              onChange={e => e.target.value === 'both' ? save({ is_shared: true }) : save({ is_shared: false, assigned_to: e.target.value })}>
               {members.map(m => <option key={m.user_id} value={m.user_id}>{m.profile.name}</option>)}
+              {members.length > 1 && <option value="both">Ambas</option>}
             </select>
           </dd>
           <dt className="text-mute">Categoria</dt>
@@ -215,9 +245,18 @@ function TaskBody({ task }: { task: Task }) {
             {PRIORITY.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>
         </dd>
-        <dt className="text-mute">Prazo</dt>
+        {!task.needs_triage && <>
+          <dt className="text-mute">Dia para fazer</dt>
+          <dd className="flex items-center gap-2">
+            <input aria-label="Dia para fazer" type="date" className="field py-1.5" value={task.scheduled_date ?? ''} onChange={e => save({ scheduled_date: e.target.value || todayISO() })} />
+            {task.scheduled_date !== todayISO() && <button className="btn-text text-xs" onClick={() => save({ scheduled_date: todayISO() })}>Hoje</button>}
+          </dd>
+          <dt className="text-mute">Até que horas</dt>
+          <dd><TimeField compact idPrefix="td" value={{ due_time: task.due_time?.slice(0, 5) ?? null, time_window: task.time_window }} onChange={v => save(v)} /></dd>
+        </>}
+        <dt className="text-mute">Prazo final</dt>
         <dd className="flex items-center gap-2">
-          <input aria-label="Prazo" type="date" className={`field py-1.5 ${late ? 'text-late' : ''}`} value={task.due_date ?? ''} onChange={e => save({ due_date: e.target.value || null })} />
+          <input aria-label="Prazo final" type="date" className={`field py-1.5 ${late ? 'text-late' : ''}`} value={task.due_date ?? ''} onChange={e => save({ due_date: e.target.value || null })} />
           {task.due_date && <button className="btn-text text-xs" onClick={() => save({ due_date: null })}>Limpar</button>}
         </dd>
         <dt className="text-mute">Criado por</dt>

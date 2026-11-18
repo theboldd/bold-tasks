@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { Columns3, List, Plus, Rows3, SlidersHorizontal, X } from 'lucide-react'
 import { useWs } from '../lib/store'
 import { useUI } from '../lib/ui'
-import { EMPTY_FILTERS, applyFilters, categoryOptions, filtersFromParams, filtersToParams, type Filters } from '../lib/filters'
-import { PRIORITY, STATUS, firstName, isDueToday, isOverdue, todayISO } from '../lib/labels'
+import { EMPTY_FILTERS, applyFilters, dayCmp, categoryOptions, filtersFromParams, filtersToParams, type Filters } from '../lib/filters'
+import { PRIORITY, STATUS, firstName, isForToday, isOverdue, todayISO } from '../lib/labels'
 import type { Task } from '../lib/types'
 import { Kanban, TaskList } from '../components/TaskViews'
 import { Empty, PageHeader, Spinner } from '../components/ui'
@@ -12,7 +12,7 @@ import { Empty, PageHeader, Spinner } from '../components/ui'
 export type Variant = 'all' | 'mine' | 'other' | 'thebold' | 'waiting' | 'triage'
 
 export function TasksPage({ variant }: { variant: Variant }) {
-  const { tasks, tasksLoaded, me, other, members } = useWs()
+  const { tasks, tasksLoaded, me, other, members, isMine } = useWs()
   const { openNew } = useUI()
   const [params, setParams] = useSearchParams()
   const [showFilters, setShowFilters] = useState(false)
@@ -21,13 +21,13 @@ export function TasksPage({ variant }: { variant: Variant }) {
   const view = params.get('view') ?? (grouped ? 'groups' : 'list')
 
   const scoped = useMemo(() => tasks.filter(t => {
-    if (variant === 'mine') return t.assigned_to === me.id
-    if (variant === 'other') return !!other && t.assigned_to === other.user_id
+    if (variant === 'mine') return isMine(t, me.id)
+    if (variant === 'other') return !!other && isMine(t, other.user_id)
     if (variant === 'thebold') return t.category === 'the_bold'
     if (variant === 'waiting') return t.status === 'aguardando'
     if (variant === 'triage') return t.needs_triage && t.status !== 'concluida'
     return true
-  }), [tasks, variant, me.id, other])
+  }), [tasks, variant, me.id, other, isMine])
 
   // mesma base para lista e Kanban: as duas visões mostram exatamente os mesmos dados
   const base: Filters = { ...EMPTY_FILTERS, status: grouped || variant === 'waiting' ? '' : 'open' }
@@ -74,7 +74,8 @@ export function TasksPage({ variant }: { variant: Variant }) {
           <SlidersHorizontal size={15} />Filtros{activeCount ? ` · ${activeCount}` : ''}
         </button>
         <select aria-label="Ordenar por" className="field w-auto py-2" value={f.sort} onChange={e => setF({ sort: e.target.value as Filters['sort'] })}>
-          <option value="due">Ordenar: prazo</option>
+          <option value="day">Ordenar: dia e horário</option>
+          <option value="due">Ordenar: prazo final</option>
           <option value="priority">Ordenar: prioridade</option>
           <option value="created">Ordenar: criação</option>
         </select>
@@ -83,19 +84,21 @@ export function TasksPage({ variant }: { variant: Variant }) {
       </div>
 
       {showFilters && (
-        <div className="card mb-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 p-4 fade-in" data-testid="filters">
+        <div className="card mb-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 p-4 fade-in" data-testid="filters">
           <Sel label="Responsável" value={f.assigned} onChange={v => setF({ assigned: v })} disabled={grouped}
-            opts={[{ value: '', label: 'Todas' }, ...members.map(m => ({ value: m.user_id, label: m.profile.name })), { value: 'none', label: 'Sem responsável' }]} />
+            opts={[{ value: '', label: 'Todas' }, ...members.map(m => ({ value: m.user_id, label: m.profile.name })), { value: 'shared', label: 'Das duas' }, { value: 'none', label: 'Sem responsável' }]} />
           <Sel label="Criado por" value={f.createdBy} onChange={v => setF({ createdBy: v })}
             opts={[{ value: '', label: 'Todas' }, ...members.map(m => ({ value: m.user_id, label: m.profile.name }))]} />
           <Sel label="Categoria" value={f.category} onChange={v => setF({ category: v })} opts={[{ value: '', label: 'Todas' }, ...categoryOptions(members)]} />
           <Sel label="Status" value={f.status} onChange={v => setF({ status: v })} opts={[{ value: '', label: 'Todos' }, { value: 'open', label: 'Abertas' }, ...STATUS]} />
           <Sel label="Prioridade" value={f.priority} onChange={v => setF({ priority: v })} opts={[{ value: '', label: 'Todas' }, ...PRIORITY]} />
-          <Sel label="Prazo" value={f.due} onChange={v => setF({ due: v, noDue: false })}
+          <Sel label="Dia para fazer" value={f.day} onChange={v => setF({ day: v })}
+            opts={[{ value: '', label: 'Qualquer' }, { value: 'today', label: 'Hoje' }, { value: 'tomorrow', label: 'Amanhã' }, { value: 'week', label: 'Esta semana' }, { value: 'none', label: 'Sem dia' }]} />
+          <Sel label="Prazo final" value={f.due} onChange={v => setF({ due: v, noDue: false })}
             opts={[{ value: '', label: 'Qualquer' }, { value: 'today', label: 'Hoje' }, { value: 'week', label: 'Esta semana' }, { value: 'next7', label: 'Próximos 7 dias' }, { value: 'month', label: 'Este mês' }]} />
-          <div className="col-span-2 md:col-span-4 lg:col-span-6 flex flex-wrap gap-4 pt-1 text-sm">
+          <div className="col-span-2 md:col-span-4 lg:col-span-7 flex flex-wrap gap-4 pt-1 text-sm">
             <Chk label="Só atrasadas" checked={f.overdue} onChange={v => setF({ overdue: v })} />
-            <Chk label="Sem prazo" checked={f.noDue} onChange={v => setF({ noDue: v, due: '' })} />
+            <Chk label="Sem prazo final" checked={f.noDue} onChange={v => setF({ noDue: v, due: '' })} />
             <Chk label="A classificar" checked={f.triage} onChange={v => setF({ triage: v })} />
           </div>
         </div>
@@ -114,10 +117,10 @@ function Groups({ tasks }: { tasks: Task[] }) {
   const take = (pred: (t: Task) => boolean) => tasks.filter(t => !used.has(t.id) && pred(t)).map(t => (used.add(t.id), t))
   const groups = [
     { key: 'overdue', title: 'Atrasadas', items: take(t => isOverdue(t, today)) },
-    { key: 'today', title: 'Para hoje', items: take(t => isDueToday(t, today)) },
+    { key: 'today', title: 'Para hoje', items: take(t => isForToday(t, today)) },
     { key: 'doing', title: 'Em andamento', items: take(t => t.status === 'em_andamento') },
     { key: 'waiting', title: 'Aguardando terceiros', items: take(t => t.status === 'aguardando') },
-    { key: 'next', title: 'Próximas', items: take(t => t.status !== 'concluida') },
+    { key: 'next', title: 'Próximas', items: take(t => t.status !== 'concluida').sort(dayCmp) },
     { key: 'done', title: 'Concluídas', items: take(t => t.status === 'concluida').sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? '')).slice(0, 15) },
   ]
   if (!tasks.length) return <Empty title="Tudo em dia" text="Nenhuma pendência nesta área." />

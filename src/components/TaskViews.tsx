@@ -4,26 +4,37 @@ import { useWs } from '../lib/store'
 import { STATUS } from '../lib/labels'
 import { categoryLabel } from '../lib/filters'
 import type { Status, Task } from '../lib/types'
-import { Avatar, DueBadge, PriorityTag, StatusPill, TriageBadge, memberColorIndex } from './ui'
+import { Avatar, DayTimeChip, DeadlineBadge, PriorityTag, RolloverBadge, SharedAvatars, StatusPill, TriageBadge, memberColorIndex } from './ui'
 import { useUI } from '../lib/ui'
 
 export function CompleteToggle({ task }: { task: Task }) {
-  const { updateTask } = useWs()
+  const { toggleDone, partsOf, me } = useWs()
   const done = task.status === 'concluida'
+  const myPart = task.is_shared ? partsOf(task.id).find(p => p.user_id === me.id) : null
+  const half = task.is_shared && !done && !!myPart?.completed_at
+  const label = done ? `Reabrir “${task.title}”` : task.is_shared ? (half ? `Reabrir minha parte de “${task.title}”` : `Concluir minha parte de “${task.title}”`) : `Concluir “${task.title}”`
   return (
     <button
-      aria-label={done ? `Reabrir “${task.title}”` : `Concluir “${task.title}”`}
-      title={task.needs_triage && !done ? 'Classifique a captura antes de concluir' : done ? 'Reabrir' : 'Concluir'}
+      aria-label={label}
+      title={task.needs_triage && !done ? 'Classifique a captura antes de concluir' : label.replace(/ “.*”$/, '')}
       disabled={task.needs_triage && !done}
-      onClick={e => { e.stopPropagation(); updateTask(task.id, { status: done ? 'a_fazer' : 'concluida' }) }}
-      className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition disabled:opacity-40 ${done ? 'border-ok bg-ok text-white' : 'border-[#cfc7bd] bg-paper hover:border-bordo hover:bg-bordo-50'}`}>
-      {done && <Check size={13} strokeWidth={3} />}
+      onClick={e => { e.stopPropagation(); toggleDone(task) }}
+      className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border transition disabled:opacity-40 ${done ? 'border-ok bg-ok text-white' : half ? 'border-ok bg-ok-50 text-ok' : 'border-[#cfc7bd] bg-paper hover:border-bordo hover:bg-bordo-50'}`}>
+      {(done || half) && <Check size={13} strokeWidth={3} />}
     </button>
   )
 }
 
+function Who({ task, size = 26 }: { task: Task; size?: number }) {
+  const { members, memberName, partsOf } = useWs()
+  if (task.is_shared) return <SharedAvatars members={members} parts={partsOf(task.id)} />
+  return task.assigned_to
+    ? <Avatar name={memberName(task.assigned_to)} idx={memberColorIndex(members, task.assigned_to)} size={size} />
+    : <span className="rounded-full border border-dashed border-[#cfc7bd]" style={{ width: size, height: size }} title="Sem responsável" />
+}
+
 export function TaskRow({ task, showAssignee = true }: { task: Task; showAssignee?: boolean }) {
-  const { members, memberName, updateTask } = useWs()
+  const { memberName, updateTask } = useWs()
   const { openTask } = useUI()
   const done = task.status === 'concluida'
   return (
@@ -32,10 +43,12 @@ export function TaskRow({ task, showAssignee = true }: { task: Task; showAssigne
       <div className="min-w-0 flex-1">
         <div className={`truncate text-[15px] ${done ? 'text-mute line-through decoration-1' : ''}`}>{task.title}</div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-mute">
-          {task.needs_triage ? <TriageBadge /> : <span>{categoryLabel(task, memberName)}</span>}
+          {task.needs_triage ? <TriageBadge /> : <DayTimeChip task={task} />}
+          <RolloverBadge task={task} />
           <PriorityTag priority={task.priority} />
-          <span className="md:hidden"><DueBadge task={task} /></span>
-          <span className="hidden sm:inline">#{task.seq}</span>
+          <DeadlineBadge task={task} />
+          {!task.needs_triage && <span className="hidden lg:inline">{categoryLabel(task, memberName)}</span>}
+          {task.is_shared && <span className="rounded bg-bordo-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-bordo">Das duas</span>}
         </div>
       </div>
       {/* edição rápida (desktop) */}
@@ -44,13 +57,10 @@ export function TaskRow({ task, showAssignee = true }: { task: Task; showAssigne
           value={task.status} disabled={task.needs_triage} onChange={e => updateTask(task.id, { status: e.target.value as Status })}>
           {STATUS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
-        <input aria-label="Prazo" type="date" className={`w-[132px] rounded-full border border-transparent bg-transparent px-2 py-1 text-xs hover:border-line focus:border-bordo outline-none ${task.due_date ? '' : 'text-mute'}`}
-          value={task.due_date ?? ''} onChange={e => updateTask(task.id, { due_date: e.target.value || null })} />
+        {!task.needs_triage && <input aria-label="Dia para fazer" title="Dia para fazer" type="date" className="w-[132px] rounded-full border border-transparent bg-transparent px-2 py-1 text-xs hover:border-line focus:border-bordo outline-none"
+          value={task.scheduled_date ?? ''} onChange={e => e.target.value && updateTask(task.id, { scheduled_date: e.target.value })} />}
       </div>
-      <div className="hidden md:block w-24 text-right"><DueBadge task={task} /></div>
-      {showAssignee && (task.assigned_to
-        ? <Avatar name={memberName(task.assigned_to)} idx={memberColorIndex(members, task.assigned_to)} size={26} />
-        : <span className="h-[26px] w-[26px] rounded-full border border-dashed border-[#cfc7bd]" title="Sem responsável" />)}
+      {(showAssignee || task.is_shared) && <Who task={task} />}
     </li>
   )
 }
@@ -61,7 +71,7 @@ export function TaskList({ tasks, showAssignee = true, empty }: { tasks: Task[];
 }
 
 export function Kanban({ tasks }: { tasks: Task[] }) {
-  const { members, memberName, updateTask } = useWs()
+  const { memberName, updateTask } = useWs()
   const { openTask } = useUI()
   const [over, setOver] = useState<Status | null>(null)
   return (
@@ -99,8 +109,8 @@ export function Kanban({ tasks }: { tasks: Task[] }) {
                       <PriorityTag priority={t.priority} />
                     </div>
                     <div className="flex items-center gap-2">
-                      <DueBadge task={t} />
-                      {t.assigned_to && <Avatar name={memberName(t.assigned_to)} idx={memberColorIndex(members, t.assigned_to)} size={22} />}
+                      <DayTimeChip task={t} />
+                      <Who task={t} size={22} />
                     </div>
                   </div>
                   {/* mudança de status no celular (sem arrastar) */}
@@ -119,17 +129,19 @@ export function Kanban({ tasks }: { tasks: Task[] }) {
   )
 }
 
-export function MiniTask({ task }: { task: Task }) {
-  const { memberName, members } = useWs()
+export function MiniTask({ task, showDay = true }: { task: Task; showDay?: boolean }) {
   const { openTask } = useUI()
   return (
-    <li className="flex items-center gap-3 py-2.5 cursor-pointer" onClick={() => openTask(task.id)} data-testid="mini-task">
+    <li className="flex items-center gap-3 py-2.5 cursor-pointer" onClick={() => openTask(task.id)} data-testid="mini-task" data-task-id={task.id}>
       <CompleteToggle task={task} />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm">{task.title}</div>
-        <div className="flex items-center gap-2 text-xs text-mute"><DueBadge task={task} /><PriorityTag priority={task.priority} />{task.status !== 'a_fazer' && <StatusPill status={task.status} />}</div>
+        <div className={`truncate text-sm ${task.status === 'concluida' ? 'text-mute line-through' : ''}`}>{task.title}</div>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-mute">
+          <DayTimeChip task={task} showDay={showDay} /><RolloverBadge task={task} /><PriorityTag priority={task.priority} /><DeadlineBadge task={task} />
+          {task.status !== 'a_fazer' && task.status !== 'concluida' && <StatusPill status={task.status} />}
+        </div>
       </div>
-      {task.assigned_to && <Avatar name={memberName(task.assigned_to)} idx={memberColorIndex(members, task.assigned_to)} size={22} />}
+      <Who task={task} size={22} />
     </li>
   )
 }

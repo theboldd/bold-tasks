@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import type { Member, Notification, Profile, Task, TaskPatch, Workspace } from './types'
+import type { Member, Notification, Profile, Task, TaskPart, TaskPatch, Workspace } from './types'
 
 /* ================= Auth ================= */
 interface AuthCtx { session: Session | null; loading: boolean }
@@ -62,6 +62,10 @@ interface WorkspaceCtx {
   markAllRead: () => Promise<void>
   refresh: () => Promise<void>
   realtimeStatus: string
+  parts: TaskPart[]
+  partsOf: (taskId: string) => TaskPart[]
+  isMine: (t: Task, userId?: string) => boolean
+  toggleDone: (t: Task) => Promise<void>
 }
 const WsContext = createContext<WorkspaceCtx | null>(null)
 export function useWs() {
@@ -89,6 +93,7 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
   const [tasksLoaded, setTasksLoaded] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [realtimeStatus, setRealtimeStatus] = useState('connecting')
+  const [parts, setParts] = useState<TaskPart[]>([])
 
   // perfil e workspaces
   useEffect(() => {
@@ -111,9 +116,13 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
   }, [workspaces, wsId])
 
   const loadTasks = useCallback(async (ws: string) => {
-    const { data, error } = await supabase.from('tasks').select('*').eq('workspace_id', ws).is('deleted_at', null).order('created_at', { ascending: false }).limit(5000)
+    const [{ data, error }, { data: pdata }] = await Promise.all([
+      supabase.from('tasks').select('*').eq('workspace_id', ws).is('deleted_at', null).order('created_at', { ascending: false }).limit(5000),
+      supabase.from('task_parts').select('*').eq('workspace_id', ws),
+    ])
     if (error) { toast(errMsg(error), 'error'); return }
     setTasks((data ?? []) as Task[])
+    setParts((pdata ?? []) as TaskPart[])
     setTasksLoaded(true)
   }, [toast])
 
@@ -144,6 +153,13 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
           const rest = prev.filter(t => t.id !== row.id)
           if (row.deleted_at) return rest
           return [row, ...rest].sort((a, b) => b.created_at.localeCompare(a.created_at))
+        })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_parts', filter: `workspace_id=eq.${ws}` }, payload => {
+        const row = (payload.eventType === 'DELETE' ? payload.old : payload.new) as TaskPart
+        setParts(prev => {
+          const rest = prev.filter(p => !(p.task_id === row.task_id && p.user_id === row.user_id))
+          return payload.eventType === 'DELETE' ? rest : [...rest, row]
         })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${uid}` }, payload => {
@@ -209,6 +225,24 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
     await supabase.rpc('mark_all_notifications_read')
   }
+  const partsOf = useCallback((taskId: string) => parts.filter(p => p.task_id === taskId), [parts])
+  const isMine = useCallback((t: Task, userId: string = uid) =>
+    t.is_shared ? parts.some(p => p.task_id === t.id && p.user_id === userId) || members.some(m => m.user_id === userId) : t.assigned_to === userId,
+  [parts, members, uid])
+  const toggleDone = async (t: Task) => {
+    if (!t.is_shared) { await updateTask(t.id, { status: t.status === 'concluida' ? 'a_fazer' : 'concluida' }); return }
+    const mine = parts.find(p => p.task_id === t.id && p.user_id === uid)
+    if (t.status === 'concluida' || mine?.completed_at) {
+      setParts(prev => prev.map(p => p.task_id === t.id && p.user_id === uid ? { ...p, completed_at: null } : p))
+      const { error } = await supabase.rpc('reopen_my_part', { p_task: t.id })
+      if (error) { toast(errMsg(error), 'error'); loadTasks(t.workspace_id) } else toast('Sua parte foi reaberta')
+    } else {
+      setParts(prev => prev.map(p => p.task_id === t.id && p.user_id === uid ? { ...p, completed_at: new Date().toISOString() } : p))
+      const { data, error } = await supabase.rpc('complete_my_part', { p_task: t.id })
+      if (error) { toast(errMsg(error), 'error'); loadTasks(t.workspace_id); return }
+      toast(data === 'concluida' ? 'Pendência das duas concluída' : 'Sua parte foi concluída — a outra foi avisada')
+    }
+  }
   const refresh = async () => { if (workspace) { await loadTasks(workspace.id); await loadNotifications(workspace.id) } }
 
   if (workspaces === null || !me) return <>{fallback('loading')}</>
@@ -220,6 +254,7 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
     switchWorkspace: (id) => { localStorage.setItem('bt_ws', id); setWsId(id) },
     members, memberName, other, tasks, tasksLoaded, notifications,
     createTask, quickCapture, updateTask, deleteTask, markRead, markAllRead, refresh, realtimeStatus,
+    parts, partsOf, isMine, toggleDone,
   }
   return <WsContext.Provider value={value}>{children}</WsContext.Provider>
 }

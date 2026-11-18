@@ -4,7 +4,8 @@ import { AlertTriangle, ArrowRight, Inbox, Plus, Zap } from 'lucide-react'
 import { useWs } from '../lib/store'
 import { useUI } from '../lib/ui'
 import { supabase } from '../lib/supabase'
-import { PRIORITY_RANK, addDaysISO, firstName, isDueToday, isOpen, isOverdue, timeAgo, todayISO, weekStartISO } from '../lib/labels'
+import { PRIORITY_RANK, addDaysISO, dayLabel, firstName, isDueToday, isForToday, isOpen, isOverdue, isTimePassed, timeAgo, todayISO, weekStartISO } from '../lib/labels'
+import { dayCmp } from '../lib/filters'
 import { describeActivity } from '../lib/activity'
 import type { Activity, Task } from '../lib/types'
 import { MiniTask } from '../components/TaskViews'
@@ -12,12 +13,12 @@ import { Avatar, memberColorIndex, Spinner } from '../components/ui'
 
 function attentionSort(a: Task, b: Task) {
   const today = todayISO()
-  const score = (t: Task) => (isOverdue(t, today) ? 0 : isDueToday(t, today) ? 1 : t.priority === 'alta' ? 2 : t.status === 'em_andamento' ? 3 : 4)
+  const score = (t: Task) => (isOverdue(t, today) ? 0 : isForToday(t, today) || isDueToday(t, today) ? 1 : t.priority === 'alta' ? 2 : t.status === 'em_andamento' ? 3 : 4)
   return score(a) - score(b) || (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999') || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
 }
 
 export function Dashboard() {
-  const { me, other, tasks, tasksLoaded, workspace, memberName, members } = useWs()
+  const { me, other, tasks, tasksLoaded, workspace, memberName, members, isMine, partsOf } = useWs()
   const { openNew, openTask } = useUI()
   const [activity, setActivity] = useState<Activity[]>([])
   const today = todayISO()
@@ -37,16 +38,17 @@ export function Dashboard() {
     const ws = weekStartISO(today)
     return {
       open: open.length,
-      mine: open.filter(t => t.assigned_to === me.id),
-      other: other ? open.filter(t => t.assigned_to === other.user_id) : [],
+      mine: open.filter(t => isMine(t, me.id)),
+      other: other ? open.filter(t => isMine(t, other.user_id)) : [],
       overdue: open.filter(t => isOverdue(t, today)),
-      today: open.filter(t => isDueToday(t, today)),
+      today: open.filter(t => isForToday(t, today)),
+      myToday: open.filter(t => isForToday(t, today) && isMine(t, me.id) && !(t.is_shared && partsOf(t.id).find(p => p.user_id === me.id)?.completed_at)),
       waiting: open.filter(t => t.status === 'aguardando'),
       triage: open.filter(t => t.needs_triage),
       doneWeek: tasks.filter(t => t.status === 'concluida' && t.completed_at && todayISO(new Date(t.completed_at)) >= ws).length,
       upcoming: open.filter(t => t.due_date && t.due_date >= today && t.due_date <= addDaysISO(today, 7)).sort((a, b) => a.due_date!.localeCompare(b.due_date!)),
     }
-  }, [tasks, me.id, other, today])
+  }, [tasks, me.id, other, today, isMine, partsOf])
 
   if (!tasksLoaded) return <Spinner />
 
@@ -69,9 +71,12 @@ export function Dashboard() {
         <div className="eyebrow mb-2">{new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' }).format(new Date())}</div>
         <h1 className="font-serif text-3xl md:text-[2.8rem] leading-[1.05] tracking-tight">{greet}, <span className="font-accent italic font-normal text-bordo">{firstName(me.name)}</span>.</h1>
         <p className="mt-3 text-mute max-w-xl">
-          {s.overdue.length || s.today.length
-            ? <>Você tem <strong className="text-ink">{s.mine.filter(t => isOverdue(t, today)).length} atrasada(s)</strong> e <strong className="text-ink">{s.mine.filter(t => isDueToday(t, today)).length} para hoje</strong> sob sua responsabilidade.</>
-            : 'Nada atrasado nem vencendo hoje. Bom momento para adiantar as próximas.'}
+          {s.myToday.length
+            ? <>Hoje você tem <strong className="text-ink">{s.myToday.length} {s.myToday.length === 1 ? 'pendência' : 'pendências'}</strong>
+                {s.myToday.some(t => t.rollover_count > 0) && <> — {s.myToday.filter(t => t.rollover_count > 0).length} vieram de dias anteriores</>}
+                {s.mine.some(t => isOverdue(t, today)) && <>, e <strong className="text-late">{s.mine.filter(t => isOverdue(t, today)).length} com prazo final vencido</strong></>}.
+                {' '}O que não for concluído hoje passa para amanhã automaticamente.</>
+            : 'Seu dia está livre. Bom momento para adiantar as próximas.'}
         </p>
       </div>
 
@@ -101,12 +106,8 @@ export function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 [&>section]:min-w-0">
-        {/* 2. minhas prioridades */}
-        <section className="card p-5 lg:col-span-2" aria-label="Minhas prioridades">
-          <SectionHead title="Minhas prioridades" to="/minhas" />
-          {s.mine.length ? <ul className="divide-y divide-line">{[...s.mine].sort(attentionSort).slice(0, 7).map(t => <MiniTask key={t.id} task={t} />)}</ul>
-            : <p className="py-6 text-sm text-mute">Nenhuma pendência aberta com você.</p>}
-        </section>
+        {/* 2. por dia */}
+        <ByDay />
 
         {/* 6. ações rápidas */}
         <section className="card p-5" aria-label="Ações rápidas">
@@ -128,7 +129,7 @@ export function Dashboard() {
 
         {/* 4. próximos prazos */}
         <section className="card p-5" aria-label="Próximos prazos">
-          <SectionHead title="Próximos 7 dias" to="/calendario" />
+          <SectionHead title="Prazos finais (7 dias)" to="/calendario" />
           {s.upcoming.length ? <ul className="divide-y divide-line">{s.upcoming.slice(0, 7).map(t => <MiniTask key={t.id} task={t} />)}</ul>
             : <p className="py-6 text-sm text-mute">Sem prazos na próxima semana.</p>}
         </section>
@@ -165,5 +166,53 @@ function SectionHead({ title, to }: { title: string; to?: string }) {
       <h2 className="font-serif text-xl">{title}</h2>
       {to && <Link to={to} className="text-xs text-mute hover:text-bordo">Ver tudo →</Link>}
     </div>
+  )
+}
+
+/** Pendências separadas por dia para fazer. O que não é concluído vai sozinho para o dia seguinte. */
+function ByDay() {
+  const { tasks, me, isMine } = useWs()
+  const [scope, setScope] = useState<'mine' | 'all'>(() => (localStorage.getItem('bt_day_scope') as 'mine' | 'all') || 'mine')
+  const today = todayISO()
+  const days = [0, 1, 2, 3, 4].map(n => addDaysISO(today, n))
+  const pool = tasks.filter(t => !t.needs_triage && t.scheduled_date && (scope === 'all' || isMine(t, me.id)))
+  const col = (d: string) => pool
+    .filter(t => t.scheduled_date === d && (t.status !== 'concluida' || (d === today && t.completed_at && todayISO(new Date(t.completed_at)) === today)))
+    .sort((a, b) => (a.status === 'concluida' ? 1 : 0) - (b.status === 'concluida' ? 1 : 0) || dayCmp(a, b))
+  const [sel, setSel] = useState(today)
+  const later = pool.filter(t => isOpen(t) && t.scheduled_date! > days[4]).length
+  return (
+    <section className="card p-5 lg:col-span-2" aria-label="Por dia" data-testid="by-day">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-serif text-xl">Por dia</h2>
+        <div className="inline-flex rounded-full border border-line bg-off p-0.5 text-xs" role="group" aria-label="Escopo">
+          {(['mine', 'all'] as const).map(v => (
+            <button key={v} aria-pressed={scope === v} onClick={() => { setScope(v); localStorage.setItem('bt_day_scope', v) }}
+              className={`rounded-full px-3 py-1 ${scope === v ? 'bg-paper shadow-sm font-medium' : 'text-mute'}`}>{v === 'mine' ? 'Minhas' : 'Todas'}</button>
+          ))}
+        </div>
+      </div>
+      <div className="scrollbar-thin -mx-1 mb-3 flex gap-1 overflow-x-auto px-1" role="tablist" aria-label="Dias">
+        {days.map(d => {
+          const items = col(d)
+          const open = items.filter(isOpen).length
+          const passed = items.some(isTimePassed)
+          return (
+            <button key={d} role="tab" aria-selected={sel === d} onClick={() => setSel(d)} data-testid={`day-tab-${d}`}
+              className={`shrink-0 rounded-xl border px-3 py-2 text-left transition ${sel === d ? 'border-bordo bg-bordo text-off' : 'border-line bg-paper hover:border-ink'}`}>
+              <div className={`text-[11px] uppercase tracking-wider ${sel === d ? 'text-off/70' : 'text-mute'}`}>{dayLabel(d)}</div>
+              <div className="flex items-center gap-1.5 text-lg font-light tabular-nums leading-tight">{open}
+                {passed && <span className={`h-1.5 w-1.5 rounded-full ${sel === d ? 'bg-off' : 'bg-late'}`} title="Horário passou" />}</div>
+            </button>
+          )
+        })}
+      </div>
+      {(() => {
+        const items = col(sel)
+        if (!items.length) return <p className="py-6 text-sm text-mute">{sel === today ? 'Nada para hoje.' : 'Nada planejado para este dia.'}</p>
+        return <ul className="divide-y divide-line" data-testid="by-day-list">{items.map(t => <MiniTask key={t.id} task={t} showDay={false} />)}</ul>
+      })()}
+      <p className="mt-3 text-xs text-mute">O que não for concluído no dia passa automaticamente para o dia seguinte.{later > 0 && ` · ${later} planejada(s) mais adiante.`}</p>
+    </section>
   )
 }

@@ -1,6 +1,7 @@
 export type Status = 'a_fazer' | 'em_andamento' | 'aguardando' | 'concluida'
 export type Priority = 'alta' | 'normal' | 'baixa'
 export type Category = 'the_bold' | 'pessoal'
+export type TimeWindow = 'manha' | 'tarde' | 'fim_do_dia'
 
 export interface Profile { id: string; name: string; email: string; avatar_url: string | null }
 export interface Workspace { id: string; name: string; slug: string }
@@ -20,6 +21,11 @@ export interface Task {
   priority: Priority
   due_date: string | null
   needs_triage: boolean
+  scheduled_date: string | null
+  due_time: string | null
+  time_window: TimeWindow | null
+  is_shared: boolean
+  rollover_count: number
   completed_at: string | null
   completed_by: string | null
   created_at: string
@@ -37,4 +43,6 @@ export interface Notification {
   type: string; title: string; message: string | null; is_read: boolean; created_at: string
 }
 
-export type TaskPatch = Partial<Pick<Task, 'title' | 'description' | 'assigned_to' | 'category' | 'category_owner' | 'status' | 'priority' | 'due_date' | 'needs_triage'>>
+export type TaskPatch = Partial<Pick<Task, 'title' | 'description' | 'assigned_to' | 'category' | 'category_owner' | 'status' | 'priority' | 'due_date' | 'needs_triage' | 'scheduled_date' | 'due_time' | 'time_window' | 'is_shared'>>
+export interface TaskPart { task_id: string; user_id: string; workspace_id: string; completed_at: string | null }
+export interface CalEvent { owner_id: string; title: string; start: string; end: string; all_day: boolean; busy_only: boolean }

@@ -1,4 +1,4 @@
-import { formatDue, priorityLabel, statusLabel } from './labels'
+import { dayLabel, formatDue, priorityLabel, statusLabel } from './labels'
 import type { Activity } from './types'
 
 type NameFn = (id: string | null | undefined) => string
@@ -20,6 +20,9 @@ export function describeActivity(a: Activity, name: NameFn): string {
     case 'reopened': return 'reabriu a pendência'
     case 'deleted': return 'excluiu a pendência'
     case 'commented': return 'comentou'
+    case 'rolled_over': return `transferiu automaticamente para ${dayLabel(a.new_value).toLowerCase()} (não foi concluída no dia ${a.old_value ? formatDue(a.old_value) : ''})`
+    case 'part_completed': return 'concluiu a parte dela'
+    case 'part_reopened': return 'reabriu a parte dela'
     case 'updated':
       switch (a.field) {
         case 'title': return `renomeou para “${a.new_value}”`
@@ -33,6 +36,9 @@ export function describeActivity(a: Activity, name: NameFn): string {
           ? `alterou o prazo${a.old_value ? ` de ${formatDue(a.old_value)}` : ''} para ${formatDue(a.new_value)}`
           : 'removeu o prazo'
         case 'category': return `alterou a categoria para ${catLabel(a.new_value, name)}`
+        case 'scheduled_date': return `mudou o dia para fazer para ${dayLabel(a.new_value).toLowerCase()}`
+        case 'due_time': return a.new_value ? `definiu o horário: ${a.new_value}` : 'removeu o horário'
+        case 'shared': return a.new_value === 'true' ? 'tornou a pendência das duas' : 'deixou de ser pendência das duas'
       }
       return 'editou a pendência'
   }
