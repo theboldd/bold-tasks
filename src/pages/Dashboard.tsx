@@ -80,10 +80,11 @@ export function Dashboard() {
             ))}
           </p>
         )}
+        <AgencyPulse />
       </div>
 
       {(s.myOverdue.length > 0 || s.triage.length > 0) && (
-        <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2" data-testid="alerts">
+        <div className="mb-8 grid grid-cols-1 gap-3 md:grid-cols-2" data-testid="alerts">
           {s.myOverdue.length > 0 && (
             <Link to="/minhas?overdue=1" className="flex items-center gap-3 rounded-2xl border border-late/30 bg-late-50 px-4 py-3 text-sm text-late transition hover:border-late/60">
               <AlertTriangle size={17} /><span className="flex-1"><strong>{s.myOverdue.length}</strong> com prazo final vencido</span><ArrowRight size={15} />
@@ -96,8 +97,6 @@ export function Dashboard() {
           )}
         </div>
       )}
-
-      <AgencyPulse />
 
       {/* indicadores */}
       <section aria-label="Indicadores" className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line shadow-[0_14px_34px_-28px_rgba(21,19,19,.45)] sm:grid-cols-4 lg:grid-cols-7 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
