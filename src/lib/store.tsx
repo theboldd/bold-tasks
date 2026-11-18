@@ -128,9 +128,12 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
     if (!workspace) return
     const ws = workspace.id
     setTasksLoaded(false)
+    // membros antes das tarefas: evita nomes provisórios ("Usuária removida") na primeira renderização
     supabase.from('workspace_members').select('user_id,role,profile:profiles(id,name,email,avatar_url)').eq('workspace_id', ws)
-      .then(({ data }) => setMembers(((data ?? []) as unknown as Member[]).sort((a, b) => a.profile.name.localeCompare(b.profile.name))))
-    loadTasks(ws)
+      .then(({ data }) => {
+        setMembers(((data ?? []) as unknown as Member[]).sort((a, b) => a.profile.name.localeCompare(b.profile.name)))
+        loadTasks(ws)
+      })
     loadNotifications(ws)
 
     const ch = supabase.channel(`ws-${ws}-${uid}`)

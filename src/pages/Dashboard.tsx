@@ -86,7 +86,7 @@ export function Dashboard() {
       </section>
 
       {(s.triage.length > 0 || s.overdue.length > 0) && (
-        <div className="mb-8 grid gap-3 md:grid-cols-2">
+        <div className="mb-8 grid grid-cols-1 gap-3 md:grid-cols-2">
           {s.overdue.length > 0 && (
             <Link to="/pendencias?overdue=1" className="flex items-center gap-3 rounded-2xl border border-[#ecd2cc] bg-late-50 px-4 py-3 text-sm text-late">
               <AlertTriangle size={17} /> <span className="flex-1"><strong>{s.overdue.length}</strong> pendência(s) atrasada(s) no workspace</span><ArrowRight size={15} />
@@ -100,7 +100,7 @@ export function Dashboard() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 [&>section]:min-w-0">
         {/* 2. minhas prioridades */}
         <section className="card p-5 lg:col-span-2" aria-label="Minhas prioridades">
           <SectionHead title="Minhas prioridades" to="/minhas" />
@@ -137,7 +137,7 @@ export function Dashboard() {
         <section className="card p-5 lg:col-span-3" aria-label="Últimas atualizações">
           <SectionHead title="Últimas atualizações" to="/historico" />
           {activity.length ? (
-            <ul className="grid gap-x-8 md:grid-cols-2">
+            <ul className="grid grid-cols-1 gap-x-8 md:grid-cols-2 [&>li]:min-w-0">
               {activity.map(a => {
                 const t = tasks.find(x => x.id === a.task_id)
                 return (
