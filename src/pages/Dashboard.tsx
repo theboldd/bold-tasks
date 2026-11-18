@@ -77,7 +77,7 @@ export function Dashboard() {
       </div>
 
       {/* indicadores */}
-      <section aria-label="Indicadores" className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line shadow-[0_14px_34px_-28px_rgba(21,19,19,.45)] sm:grid-cols-4 lg:grid-cols-7">
+      <section aria-label="Indicadores" className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line shadow-[0_14px_34px_-28px_rgba(21,19,19,.45)] sm:grid-cols-4 lg:grid-cols-7 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
         {kpis.map(k => <Kpi key={k.label} {...k} />)}
       </section>
 

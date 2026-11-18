@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { getRemember, setRemember, supabase } from '../lib/supabase'
 
 export function Login() {
+  const [remember, setRememberState] = useState(getRemember())
   const [mode, setMode] = useState<'login' | 'first'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -65,6 +66,12 @@ export function Login() {
           <input id="email" type="email" autoComplete="email" required className="field mb-4" value={email} onChange={e => setEmail(e.target.value)} />
           <label className="eyebrow mb-1.5 block" htmlFor="password">Senha</label>
           <input id="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required className="field mb-4" value={password} onChange={e => setPassword(e.target.value)} />
+          {mode === 'login' && (
+            <label className="mb-4 -mt-1 flex cursor-pointer items-center gap-2 text-[13px] text-mute">
+              <input type="checkbox" className="h-3.5 w-3.5 accent-bordo" checked={remember} onChange={e => { setRemember(e.target.checked); setRememberState(e.target.checked) }} data-testid="remember" />
+              Manter conectada neste aparelho
+            </label>
+          )}
           {mode === 'first' && <>
             <label className="eyebrow mb-1.5 block" htmlFor="code">Código de convite</label>
             <input id="code" required autoComplete="one-time-code" className="field mb-4 uppercase tracking-[.3em]" maxLength={12} value={code} onChange={e => setCode(e.target.value)} />

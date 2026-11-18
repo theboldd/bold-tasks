@@ -10,6 +10,7 @@ import { TaskDrawer } from './TaskDrawer'
 import { Avatar, memberColorIndex } from './ui'
 import { useTheme, type ThemePref } from '../lib/theme'
 import { UpdateBanner } from './UpdateBanner'
+import { PushPrompt } from './PushPrompt'
 
 export function Layout({ children }: { children: ReactNode }) {
   const { me, other, tasks, members, workspace, workspaces, switchWorkspace, isMine } = useWs()
@@ -104,6 +105,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <UIContext.Provider value={{ openTask, openNew }}>
       <UpdateBanner />
+      <PushPrompt />
       <div className="flex min-h-full">
         <aside className="fixed inset-y-0 left-0 hidden w-64 bg-brand lg:block">{sidebar}</aside>
         {menuOpen && (
