@@ -10,16 +10,16 @@ import { processTip, whoFromName } from '../lib/process'
 function hash(s: string) { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h }
 
 const PERSONAL = [
-  'Caramba, {nome}, tem noção que hoje tem {ev}{onde}{hora}? Arrasa!',
-  '{nome}, alerta de agenda: hoje é dia de {ev}{onde}{hora}. Brilha!',
-  'Não esquece, {nome}: {ev} hoje{onde}{hora}. Água, café e confiança.',
-  '{nome}, hoje tem {ev}{onde}{hora}. O palco é seu.',
-  'Olha só, {nome}: hoje tem {ev}{onde}{hora}. Mostra quem é a Bold!',
+  'Caramba, {nome}, tem noção que hoje tem {ev}{onde}{hora}? Arrasa! 🎤✨',
+  '{nome}, alerta de agenda: hoje é dia de {ev}{onde}{hora}. Brilha! 🌟',
+  'Não esquece, {nome}: {ev} hoje{onde}{hora}. Água, café e confiança. ☕💧',
+  '{nome}, hoje tem {ev}{onde}{hora}. O palco é seu. 🎤',
+  'Olha só, {nome}: hoje tem {ev}{onde}{hora}. Mostra quem é a Bold! 🔥',
 ]
 const TEAM = [
-  'Olha, {nome}: hoje tem {ev}{onde}{hora} na agenda da agência.',
-  '{nome}, fica de olho: {ev} hoje{onde}{hora}.',
-  'Na agenda da agência hoje: {ev}{onde}{hora}. Bora dar aquele apoio!',
+  'Olha, {nome}: hoje tem {ev}{onde}{hora} na agenda da agência. 📅',
+  '{nome}, fica de olho: {ev} hoje{onde}{hora}. 👀',
+  'Na agenda da agência hoje: {ev}{onde}{hora}. Bora dar aquele apoio! 🙌',
 ]
 
 function phrase(e: CalEvent, nome: string, personal: boolean, today: string) {
