@@ -46,4 +46,4 @@ export interface Notification {
 
 export type TaskPatch = Partial<Pick<Task, 'title' | 'description' | 'assigned_to' | 'category' | 'category_owner' | 'status' | 'priority' | 'due_date' | 'needs_triage' | 'scheduled_date' | 'due_time' | 'time_window' | 'is_shared' | 'is_team'>>
 export interface TaskPart { task_id: string; user_id: string; workspace_id: string; completed_at: string | null }
-export interface CalEvent { owner_id: string; title: string; start: string; end: string; all_day: boolean; busy_only: boolean }
+export interface CalEvent { owner_id: string | null; source?: 'personal' | 'agency'; title: string; location?: string | null; start: string; end: string; all_day: boolean; busy_only: boolean }

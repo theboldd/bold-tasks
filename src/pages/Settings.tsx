@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Bell, CalendarDays } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Bell, Building2, CalendarDays } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast, useWs } from '../lib/store'
 import { PageHeader } from '../components/ui'
@@ -17,6 +17,7 @@ export function SettingsPage() {
       <PageHeader eyebrow="Conta" title="Configurações" />
       <PushCard />
       <GoogleCard />
+      <AgencyCalendarCard />
       <section className="mb-10 border-t border-ink/80 pt-5">
         <h2 className="font-serif text-[1.7rem] leading-none mb-4">Perfil</h2>
         <form className="flex flex-wrap items-end gap-3" onSubmit={async e => {
@@ -139,6 +140,58 @@ function GoogleCard() {
       </div>
       {result && <p className={`mt-3 text-sm ${result.startsWith('Conectado') ? 'text-ok' : 'text-late'}`} data-testid="google-result">{result}</p>}
       <p className="mt-3 text-xs text-mute">O endereço fica guardado só para você e é lido pelo servidor; nunca é mostrado para a outra usuária. Atualização a cada 15 minutos.</p>
+    </section>
+  )
+}
+
+function AgencyCalendarCard() {
+  const { workspace } = useWs()
+  const toast = useToast()
+  const [url, setUrl] = useState('')
+  const [st, setSt] = useState<{ configured: boolean; updated_at: string; updated_by_name: string | null } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState('')
+  const refresh = useCallback(async () => {
+    const { data } = await supabase.rpc('agency_calendar_status', { p_ws: workspace.id })
+    setSt((data as { configured: boolean; updated_at: string; updated_by_name: string | null }[] | null)?.[0] ?? null)
+  }, [workspace.id])
+  useEffect(() => { refresh() }, [refresh])
+  const test = async () => {
+    const from = new Date().toISOString(), to = new Date(Date.now() + 14 * 864e5).toISOString()
+    const { data, error } = await supabase.functions.invoke('calendar-events', { body: { from, to, refresh: '1', ws: workspace.id } })
+    if (error) return setResult('Não foi possível ler a agenda da agência.')
+    const s = data?.agency_status?.[workspace.id]
+    const n = (data?.events ?? []).filter((e: { source?: string }) => e.source === 'agency').length
+    setResult(s === 'ok' ? `Conectada: ${n} evento(s) da agência nos próximos 14 dias (além dos que já aparecem nas agendas pessoais).`
+      : /404/.test(String(s)) ? 'O Google não encontrou essa agenda (404). Use o "Endereço secreto no formato iCal" (contém /private-…/basic.ics).'
+      : `Erro: ${s ?? 'agenda não encontrada'}`)
+  }
+  const save = async () => {
+    const v = url.trim()
+    if (/calendar\.google\.com\/.*\/public\/basic\.ics/.test(v)) return setResult('Esse é o endereço público. Use o "Endereço secreto no formato iCal" (contém /private-…/basic.ics).')
+    setBusy(true)
+    const { error } = await supabase.rpc('set_agency_calendar', { p_ws: workspace.id, p_url: v })
+    if (error) { setBusy(false); return toast(error.message, 'error') }
+    setUrl(''); await refresh(); await test(); setBusy(false)
+  }
+  return (
+    <section className="mb-10 border-t border-ink/80 pt-5" data-testid="agency-calendar-card">
+      <h2 className="font-serif text-[1.7rem] leading-none mb-2 flex items-center gap-2"><Building2 size={18} />Agenda da agência</h2>
+      <p className="text-sm text-mute mb-3">Com a agenda operacional da The Bold conectada, o dashboard avisa as fases do ciclo (produção, revisão, aprovação, entregas), quanto falta para cada uma acabar e os compromissos importantes, como palestras e presenciais. Vale para as duas.</p>
+      <ol className="mb-4 list-decimal space-y-0.5 pl-5 text-sm text-mute">
+        <li>Entre no Google Agenda com a conta <strong>bold.agenciamkt@gmail.com</strong> (computador).</li>
+        <li>Configurações → em <strong>Configurações das minhas agendas</strong>, clique na agenda → <strong>Integrar agenda</strong>.</li>
+        <li>Copie o <strong>Endereço secreto no formato iCal</strong> e cole abaixo.</li>
+      </ol>
+      {st?.configured && <p className="mb-3 text-sm text-ok">Conectada{st.updated_by_name ? ` por ${st.updated_by_name.split(' ')[0]}` : ''}. Cole um novo endereço só se quiser trocar.</p>}
+      <input aria-label="Endereço secreto iCal da agência" className="field mb-3 font-mono text-xs" placeholder="https://calendar.google.com/calendar/ical/bold.agenciamkt%40gmail.com/private-.../basic.ics" value={url} onChange={e => setUrl(e.target.value)} />
+      <div className="flex flex-wrap items-center gap-2">
+        <button className="btn btn-primary" disabled={busy || !url.trim()} onClick={save}>{busy ? 'Conectando…' : st?.configured ? 'Trocar agenda' : 'Conectar agenda da agência'}</button>
+        {st?.configured && <button className="btn btn-ghost" disabled={busy} onClick={async () => { setBusy(true); await test(); setBusy(false) }}>Testar</button>}
+        {st?.configured && <button className="btn btn-text text-late" onClick={async () => { await supabase.rpc('set_agency_calendar', { p_ws: workspace.id, p_url: '' }); setSt(null); setResult(''); toast('Agenda da agência desconectada') }}>Desconectar</button>}
+      </div>
+      {result && <p className={`mt-3 text-sm ${result.startsWith('Conectada') ? 'text-ok' : 'text-late'}`}>{result}</p>}
+      <p className="mt-3 text-xs text-mute">O endereço fica guardado no servidor e nunca é mostrado no navegador. Atualização a cada 15 minutos.</p>
     </section>
   )
 }

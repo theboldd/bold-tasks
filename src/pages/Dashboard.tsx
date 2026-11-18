@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, Inbox, Plus, RefreshCw, Zap } from 'lucide-react'
 import { dailyMessage } from '../lib/messages'
+import { AgencyPulse } from '../components/AgencyPulse'
 import { useWs } from '../lib/store'
 import { useUI } from '../lib/ui'
 import { PRIORITY_RANK, addDaysISO, dayLabel, firstName, isDueToday, isForToday, isOpen, isOverdue, isTimePassed, todayISO, weekStartISO } from '../lib/labels'
@@ -80,6 +81,8 @@ export function Dashboard() {
           </p>
         )}
       </div>
+
+      <AgencyPulse />
 
       {/* indicadores */}
       <section aria-label="Indicadores" className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line shadow-[0_14px_34px_-28px_rgba(21,19,19,.45)] sm:grid-cols-4 lg:grid-cols-7 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">

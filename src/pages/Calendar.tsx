@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
-import { supabase } from '../lib/supabase'
 import { useWs } from '../lib/store'
 import { useUI } from '../lib/ui'
 import { MONTHS_FULL, WEEKDAYS, addDaysISO, effectiveTime, firstName, isOverdue, isTimePassed, timeLabel, todayISO, weekStartISO } from '../lib/labels'
 import type { CalEvent, Task } from '../lib/types'
+import { useCalendarEvents } from '../lib/calendar'
 import { Modal, PageHeader, Spinner, memberColorIndex } from '../components/ui'
 
 const DOT = ['bg-bordo', 'bg-ink', 'bg-mute', 'bg-[#6b4a3a]']
@@ -20,21 +20,6 @@ const spMinutes = (d: Date) => {
   return (h % 24) * 60 + m
 }
 const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
-
-function useCalendarEvents(from: string, to: string) {
-  const [events, setEvents] = useState<CalEvent[]>([])
-  const [status, setStatus] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(false)
-  const load = useCallback(async (refresh = false) => {
-    setLoading(true)
-    const { data, error } = await supabase.functions.invoke('calendar-events', { body: { from: `${from}T00:00:00-03:00`, to: `${addDaysISO(to, 1)}T00:00:00-03:00`, refresh: refresh ? '1' : undefined } })
-    setLoading(false)
-    if (error || !data) return
-    setEvents(data.events ?? []); setStatus(data.status ?? {})
-  }, [from, to])
-  useEffect(() => { load(); const i = setInterval(() => load(), 5 * 60 * 1000); return () => clearInterval(i) }, [load])
-  return { events, status, loading, reload: load }
-}
 
 export function CalendarPage() {
   const { tasks, tasksLoaded, members, updateTask, me } = useWs()
@@ -80,7 +65,7 @@ export function CalendarPage() {
     </button>
   )
   const eventChip = (e: CalEvent, i: number) => (
-    <button type="button" key={`e${i}`} title={e.title} data-testid="cal-event" onClick={ev => { ev.stopPropagation(); setOpenEv(e) }} className={`block w-full truncate rounded-sm border border-line px-1.5 py-0.5 text-left text-[11px] text-mute transition hover:border-mute hover:text-ink ${e.owner_id === me.id ? 'bg-paper' : 'bg-off italic'}`}>
+    <button type="button" key={`e${i}`} title={e.title} data-testid="cal-event" onClick={ev => { ev.stopPropagation(); setOpenEv(e) }} className={`block w-full truncate rounded-sm border border-line px-1.5 py-0.5 text-left text-[11px] text-mute transition hover:border-mute hover:text-ink ${e.owner_id === me.id || e.source === 'agency' ? 'bg-paper' : 'bg-off italic'}`}>
       {!e.all_day && <span className="mr-1">{hhmm(spMinutes(new Date(e.start)))}</span>}{e.title}
     </button>
   )
@@ -156,7 +141,7 @@ export function CalendarPage() {
         {hasFeed && ' Compromissos do Google Agenda aparecem em cinza (atualizados a cada 15 min). Clique num compromisso para ver os detalhes.'}
       </p>
       <Modal open={!!openEv} onClose={() => setOpenEv(null)} title={openEv?.title || 'Compromisso'}>
-        {openEv && <EventDetails e={openEv} mine={openEv.owner_id === me.id} ownerName={members.find(x => x.user_id === openEv.owner_id)?.profile.name} />}
+        {openEv && <EventDetails e={openEv} mine={openEv.owner_id === me.id} ownerName={openEv.source === 'agency' ? undefined : members.find(x => x.user_id === openEv.owner_id)?.profile.name} />}
       </Modal>
     </div>
   )
@@ -178,10 +163,11 @@ function EventDetails({ e, mine, ownerName }: { e: CalEvent; mine: boolean; owne
       <dl className="grid grid-cols-[110px_1fr] gap-y-3">
         <dt className="eyebrow pt-0.5">Quando</dt><dd className="first-letter:uppercase">{when}</dd>
         {dur != null && <><dt className="eyebrow pt-0.5">Duração</dt><dd className="meta">{dur >= 60 ? `${Math.floor(dur / 60)}h${dur % 60 ? String(dur % 60).padStart(2, '0') : ''}` : `${dur} min`}</dd></>}
-        <dt className="eyebrow pt-0.5">Agenda</dt><dd>{mine ? 'Sua agenda do Google' : `Agenda de ${firstName(ownerName) || 'outra usuária'}`}</dd>
+        {e.location && <><dt className="eyebrow pt-0.5">Local</dt><dd>{e.location}</dd></>}
+        <dt className="eyebrow pt-0.5">Agenda</dt><dd>{e.source === 'agency' ? 'Agenda da agência' : mine ? 'Sua agenda do Google' : `Agenda de ${firstName(ownerName) || 'outra usuária'}`}</dd>
       </dl>
       {!mine && e.busy_only && <p className="border-l-2 border-line pl-3 text-xs text-mute">Ela optou por mostrar só que está ocupada nesse horário; o título do compromisso não é compartilhado.</p>}
-      {mine && <a className="btn btn-ghost inline-flex" href={`https://calendar.google.com/calendar/r/day/${yy}/${Number(mm)}/${Number(dd)}`} target="_blank" rel="noreferrer">Abrir no Google Agenda ↗</a>}
+      {(mine || e.source === 'agency') && <a className="btn btn-ghost inline-flex" href={`https://calendar.google.com/calendar/r/day/${yy}/${Number(mm)}/${Number(dd)}`} target="_blank" rel="noreferrer">Abrir no Google Agenda ↗</a>}
     </div>
   )
 }
@@ -245,7 +231,7 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
               const s = spDate(new Date(e.start)) === d ? spMinutes(new Date(e.start)) : 0
               const en = spDate(new Date(e.end)) === d ? spMinutes(new Date(e.end)) : 24 * 60
               return { key: `e${i}`, start: s, end: Math.max(en, s + 15), node: (
-                <button type="button" onClick={() => onEvent(e)} title={`${e.title} · ${hhmm(s)} às ${hhmm(en)}`} data-testid="grid-event" className={`block h-full w-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:shadow-sm ${e.owner_id === me ? 'border-line bg-line/60 text-ink/80 hover:border-mute' : 'border-dashed border-line bg-off text-mute italic'}`}>
+                <button type="button" onClick={() => onEvent(e)} title={`${e.title} · ${hhmm(s)} às ${hhmm(en)}`} data-testid="grid-event" className={`block h-full w-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:shadow-sm ${e.owner_id === me || e.source === 'agency' ? 'border-line bg-line/60 text-ink/80 hover:border-mute' : 'border-dashed border-line bg-off text-mute italic'}`}>
                   <div className="font-medium truncate">{e.title}</div><div className="text-[10px] text-mute">{hhmm(s)} às {hhmm(en)}</div>
                 </button>) }
             }),

@@ -50,7 +50,7 @@ export function Login() {
         </div>
         <div className="max-w-md">
           <div className="mb-6 h-[2px] w-14 bg-[#8A2A40]" />
-          <p className="display text-[3.6rem]">Conversas viram <em className="font-normal italic text-[#D69AA3]">responsabilidades</em> claras.</p>
+          <p className="display text-[3.6rem]">Conversas viram <em className="font-normal italic text-cream">responsabilidades</em> claras.</p>
           <p className="mt-6 text-cream/60 text-sm leading-relaxed">A central compartilhada de execução da The Bold. Cada pendência com um responsável, um prazo e um histórico.</p>
         </div>
         <div className="eyebrow text-cream/40">The Bold · Uso interno</div>

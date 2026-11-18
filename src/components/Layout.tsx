@@ -72,15 +72,15 @@ export function Layout({ children }: { children: ReactNode }) {
     <nav className="flex h-full flex-col" aria-label="Menu principal">
       <div className="px-6 pt-7 pb-8">
         <div className="display text-[2.1rem] font-semibold leading-none tracking-tight text-cream">BOLD</div>
-        <div className="font-serif -mt-0.5 text-[1.35rem] italic text-[#C98A95]">tasks</div>
+        <div className="font-serif -mt-0.5 text-[1.35rem] italic text-[#C98A95] dark:text-cream">tasks</div>
       </div>
       <ul className="flex-1 space-y-0.5 overflow-y-auto px-3">
         {nav.filter(n => !(n.hideIfZero && !n.count)).map(n => (
           <li key={n.to}>
-            <NavLink to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] transition ${isActive ? 'bg-brand-accent text-cream shadow-[inset_3px_0_0_#C98A95]' : 'text-cream/65 hover:bg-cream/5 hover:text-cream'}`}>
+            <NavLink to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] transition ${isActive ? 'bg-brand-accent text-cream shadow-[inset_3px_0_0_#C98A95] dark:shadow-[inset_3px_0_0_#F5F2ED]' : 'text-cream/65 hover:bg-cream/5 hover:text-cream'}`}>
               <n.icon size={17} strokeWidth={1.6} />
               <span className="flex-1 truncate">{n.label}</span>
-              {!!n.count && <span className={`text-xs tabular-nums ${n.to === '/a-classificar' ? 'rounded-full bg-brand-accent px-1.5 font-semibold text-cream' : 'text-cream/50'}`}>{n.count}</span>}
+              {!!n.count && <span className={`text-xs tabular-nums ${n.to === '/a-classificar' ? 'rounded-full bg-brand-accent px-1.5 font-semibold text-cream dark:bg-cream dark:text-[#151313]' : 'text-cream/50'}`}>{n.count}</span>}
             </NavLink>
           </li>
         ))}
@@ -217,7 +217,7 @@ function ThemeSwitch() {
     <div className="mb-1 ml-3 inline-flex overflow-hidden rounded-full border border-cream/15" role="radiogroup" aria-label="Tema" data-testid="theme-switch">
       {opts.map(({ v, label, Icon }) => (
         <button key={v} role="radio" aria-checked={pref === v} title={label} aria-label={`Tema ${label.toLowerCase()}`} onClick={() => setPref(v)}
-          className={`flex h-7 w-9 items-center justify-center transition-colors ${pref === v ? 'bg-brand-accent text-cream' : 'text-cream/45 hover:text-cream'}`}>
+          className={`flex h-7 w-9 items-center justify-center transition-colors ${pref === v ? 'bg-brand-accent text-cream dark:bg-cream dark:text-[#151313]' : 'text-cream/45 hover:text-cream'}`}>
           <Icon size={13} strokeWidth={1.6} />
         </button>
       ))}
