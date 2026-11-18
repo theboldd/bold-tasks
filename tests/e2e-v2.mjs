@@ -122,7 +122,7 @@ await step('arrastar pendência para um horário da grade', async () => {
   await chip.waitFor({ timeout: 10000 })
   const col = v.page.getByTestId(`grid-day-${today}`)
   const bb = await chip.boundingBox(); const cb = await col.boundingBox()
-  const targetY = cb.y + (9.5 - 7) * 48 // 9h30
+  const targetY = cb.y + (9.5 - 6) * 48 // 9h30 (grade começa às 6h)
   await v.page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2); await v.page.mouse.down()
   await v.page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2 + 10, { steps: 4 })
   await v.page.mouse.move(cb.x + cb.width / 2, targetY, { steps: 20 }); await v.page.mouse.up()

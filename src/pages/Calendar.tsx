@@ -10,7 +10,7 @@ import { PageHeader, Spinner, memberColorIndex } from '../components/ui'
 
 const DOT = ['bg-bordo', 'bg-ink', 'bg-mute', 'bg-[#6b4a3a]']
 const CHIP = ['border-l-bordo', 'border-l-ink', 'border-l-mute', 'border-l-[#6b4a3a]']
-const H0 = 7, H1 = 22, PX = 48 // grade: 7h às 22h, 48px por hora
+const H0 = 6, H1 = 24, PX = 48 // grade: 6h à meia-noite, 48px por hora
 const TZ = 'America/Sao_Paulo'
 type Mode = 'month' | 'week' | 'day'
 
@@ -222,7 +222,8 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
                 </div>) }
             }),
             ...tasksOn(d).filter(t => effectiveTime(t)).map(t => {
-              const [hh, mm] = effectiveTime(t)!.split(':').map(Number); const end = hh * 60 + mm
+              const [hh, mm] = effectiveTime(t)!.split(':').map(Number)
+              const end = Math.min(H1 * 60, Math.max(H0 * 60 + 45, hh * 60 + mm)) // mantém o bloco dentro da grade
               return { key: t.id, start: end - 45, end, node: (
                 <button draggable onDragStart={e => e.dataTransfer.setData('text/task', t.id)} onClick={() => onOpen(t.id)} data-testid="grid-task"
                   className={`h-full w-full overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm ${t.status === 'concluida' ? 'border-l-ok bg-ok-50 text-mute line-through' : isTimePassed(t) ? 'border-l-late bg-late-50 text-late' : 'border-l-bordo bg-bordo-50 text-bordo'}`}>
