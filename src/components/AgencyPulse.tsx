@@ -62,7 +62,11 @@ export function AgencyPulse() {
   return (
     <p className="mt-5 flex w-fit max-w-3xl items-start gap-2.5 rounded-2xl bg-ink px-5 py-3.5 font-serif text-[1.2rem] italic leading-snug text-off shadow-[0_14px_34px_-24px_rgba(21,19,19,.6)] md:text-[1.3rem]" data-testid="agency-pulse">
       <Sparkles size={15} className="mt-1.5 shrink-0 text-[#C98A95] dark:text-[#6A1E33]" />
-      <span>{agenda}{agenda && cycle ? ' ' : ''}{cycle && <span className={agenda ? 'text-off/70' : ''}>{cycle}</span>}{tip && <span className="not-italic font-sans text-[13.5px] text-off/80"> <span className="text-[#C98A95] dark:text-[#6A1E33]">·</span> {tip}</span>}</span>
+      <span>
+        {agenda && <span className="block">{agenda}</span>}
+        {cycle && <span className={`block ${agenda ? 'mt-1 text-off/70' : ''}`}>{cycle}</span>}
+        {tip && <span className="mt-1.5 block not-italic font-sans text-[13.5px] text-off/80">{tip}</span>}
+      </span>
     </p>
   )
 }
