@@ -74,12 +74,12 @@ export function CalendarPage() {
 
   const taskChip = (t: Task) => (
     <button key={t.id} draggable onDragStart={e => e.dataTransfer.setData('text/task', t.id)} onClick={e => { e.stopPropagation(); openTask(t.id) }} data-testid="cal-chip"
-      className={`block w-full truncate rounded-md border-l-[3px] px-1.5 py-1 text-left text-[11.5px] leading-tight ${t.is_shared ? 'border-l-[#b07a6a]' : CHIP[memberColorIndex(members, t.assigned_to)]} ${t.status === 'concluida' ? 'bg-off text-mute line-through' : isOverdue(t) || isTimePassed(t) ? 'bg-late-50 text-late font-medium' : 'bg-bordo-50/60 hover:bg-bordo-50'}`}>
+      className={`block w-full truncate rounded-sm border-l-[3px] px-1.5 py-1 text-left text-[11.5px] leading-tight ${t.is_shared ? 'border-l-[#b07a6a]' : CHIP[memberColorIndex(members, t.assigned_to)]} ${t.status === 'concluida' ? 'bg-off text-mute line-through' : isOverdue(t) || isTimePassed(t) ? 'bg-late-50 text-late font-medium' : 'bg-bordo-50/60 hover:bg-bordo-50'}`}>
       {effectiveTime(t) && <span className="mr-1 font-semibold">{timeLabel(t, true)}</span>}{t.title}
     </button>
   )
   const eventChip = (e: CalEvent, i: number) => (
-    <div key={`e${i}`} title={e.title} data-testid="cal-event" className={`truncate rounded-md border border-line px-1.5 py-0.5 text-[11px] text-mute ${e.owner_id === me.id ? 'bg-paper' : 'bg-off italic'}`}>
+    <div key={`e${i}`} title={e.title} data-testid="cal-event" className={`truncate rounded-sm border border-line px-1.5 py-0.5 text-[11px] text-mute ${e.owner_id === me.id ? 'bg-paper' : 'bg-off italic'}`}>
       {!e.all_day && <span className="mr-1">{hhmm(spMinutes(new Date(e.start)))}</span>}{e.title}
     </div>
   )
@@ -87,8 +87,8 @@ export function CalendarPage() {
   return (
     <div>
       <PageHeader eyebrow="Agenda e pendências" title="Calendário">
-        <div className="inline-flex rounded-full border border-line bg-paper p-1 text-sm">
-          {(['day', 'week', 'month'] as const).map(v => <button key={v} aria-pressed={mode === v} onClick={() => setMode(v)} className={`rounded-full px-3 py-1.5 ${mode === v ? 'bg-bordo text-off' : 'text-mute'}`}>{v === 'month' ? 'Mês' : v === 'week' ? 'Semana' : 'Dia'}</button>)}
+        <div className="inline-flex border-b border-line text-[13px]">
+          {(['day', 'week', 'month'] as const).map(v => <button key={v} aria-pressed={mode === v} onClick={() => setMode(v)} className={`-mb-px border-b-2 px-3 py-2 transition ${mode === v ? 'border-bordo text-ink' : 'border-transparent text-mute hover:text-ink'}`}>{v === 'month' ? 'Mês' : v === 'week' ? 'Semana' : 'Dia'}</button>)}
         </div>
       </PageHeader>
 
@@ -98,11 +98,11 @@ export function CalendarPage() {
           <button className="btn btn-ghost" onClick={() => setAnchor(today)}>Hoje</button>
           <button className="btn btn-ghost px-2.5" onClick={() => move(1)} aria-label="Próximo período"><ChevronRight size={16} /></button>
         </div>
-        <h2 className="font-serif text-2xl first-letter:uppercase" data-testid="cal-title">{title}</h2>
+        <h2 className="font-serif text-[1.9rem] leading-none first-letter:uppercase" data-testid="cal-title">{title}</h2>
         <div className="ml-auto flex flex-wrap items-center gap-3 text-sm">
-          <button onClick={() => setWho('')} className={`rounded-full px-3 py-1 ${!who ? 'bg-ink text-off' : 'text-mute'}`}>Todas</button>
+          <button onClick={() => setWho('')} className={`border-b pb-0.5 ${!who ? 'border-ink text-ink' : 'border-transparent text-mute hover:text-ink'}`}>Todas</button>
           {members.map((mb, i) => (
-            <button key={mb.user_id} onClick={() => setWho(w => w === mb.user_id ? '' : mb.user_id)} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 ${who === mb.user_id ? 'bg-ink text-off' : 'text-ink'}`}>
+            <button key={mb.user_id} onClick={() => setWho(w => w === mb.user_id ? '' : mb.user_id)} className={`inline-flex items-center gap-1.5 border-b pb-0.5 ${who === mb.user_id ? 'border-ink text-ink' : 'border-transparent text-ink/70 hover:text-ink'}`}>
               <span className={`h-2.5 w-2.5 rounded-full ${DOT[i % DOT.length]}`} />{firstName(mb.profile.name)}
             </button>
           ))}
@@ -111,12 +111,12 @@ export function CalendarPage() {
         </div>
       </div>
 
-      {!hasFeed && <div className="mb-4 rounded-2xl border border-line bg-paper px-4 py-3 text-sm text-mute">Conecte seu Google Agenda em <Link className="text-bordo underline" to="/configuracoes">Configurações</Link> para ver seus compromissos aqui e encaixar as pendências nas janelas livres.</div>}
-      {feedErrors.length > 0 && <div className="mb-4 rounded-2xl border border-[#ecd2cc] bg-late-50 px-4 py-3 text-sm text-late">Não foi possível ler a agenda de {feedErrors.map(([id]) => firstName(members.find(x => x.user_id === id)?.profile.name)).join(', ')}: {feedErrors[0][1]}</div>}
+      {!hasFeed && <div className="mb-4 border-l-2 border-bordo pl-3 text-sm text-mute">Conecte seu Google Agenda em <Link className="text-bordo underline" to="/configuracoes">Configurações</Link> para ver seus compromissos aqui e encaixar as pendências nas janelas livres.</div>}
+      {feedErrors.length > 0 && <div className="mb-4 border-l-2 border-late pl-3 text-sm text-late">Não foi possível ler a agenda de {feedErrors.map(([id]) => firstName(members.find(x => x.user_id === id)?.profile.name)).join(', ')}: {feedErrors[0][1]}</div>}
 
       {mode === 'month' ? (
-        <div className="card overflow-hidden">
-          <div className="hidden md:grid grid-cols-7 border-b border-line bg-off/60">{WEEKDAYS.map(d => <div key={d} className="px-3 py-2 eyebrow">{d}</div>)}</div>
+        <div className="overflow-hidden border-t border-ink/80 bg-paper/50">
+          <div className="hidden md:grid grid-cols-7 border-b border-line">{WEEKDAYS.map(d => <div key={d} className="px-3 py-2 eyebrow">{d}</div>)}</div>
           <div className="grid grid-cols-7">
             {days.map((d, i) => {
               const list = tasksOn(d); const evs = eventsOn(d)
@@ -128,7 +128,7 @@ export function CalendarPage() {
                   onDoubleClick={() => openNew({ scheduled_date: d })}
                   className={`group min-h-[64px] md:min-h-[118px] border-line p-1.5 md:p-2 ${i % 7 !== 6 ? 'border-r' : ''} ${i < 35 ? 'border-b' : ''} ${outside ? 'bg-off/50' : ''} ${dragOver === d ? 'bg-bordo-50' : ''}`}>
                   <div className="mb-1 flex items-center justify-between">
-                    <button onClick={() => { setAnchor(d); setMode('day') }} className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs tabular-nums ${d === today ? 'bg-bordo text-off font-semibold' : outside ? 'text-mute/60' : 'text-ink hover:bg-off'}`}>{Number(d.slice(8))}</button>
+                    <button onClick={() => { setAnchor(d); setMode('day') }} className={`num inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[13px] ${d === today ? 'bg-bordo text-off font-semibold' : outside ? 'text-mute/50' : 'text-ink hover:bg-off'}`}>{Number(d.slice(8))}</button>
                     {evs.length > 0 && <span className="text-[10px] text-mute md:hidden">{evs.length}</span>}
                   </div>
                   <div className="flex flex-wrap gap-1 md:hidden">
@@ -190,17 +190,17 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
   const hours = Array.from({ length: H1 - H0 }, (_, i) => H0 + i)
   const cols = days.length === 1 ? 'grid-cols-[56px_1fr]' : 'grid-cols-[56px_repeat(7,minmax(110px,1fr))]'
   return (
-    <div className="card overflow-x-auto scrollbar-thin" data-testid="time-grid">
+    <div className="overflow-x-auto border-t border-ink/80 bg-paper/50 scrollbar-thin" data-testid="time-grid">
       <div className={`grid ${cols} min-w-full`}>
-        <div className="border-b border-line bg-off/60" />
+        <div className="border-b border-line" />
         {days.map(d => (
-          <div key={d} className={`border-b border-l border-line px-2 py-2 ${d === today ? 'bg-bordo-50/60' : 'bg-off/60'}`}>
-            <div className="eyebrow">{WEEKDAYS[(new Date(d + 'T12:00:00Z').getUTCDay() + 6) % 7]}</div>
-            <div className={`text-lg tabular-nums ${d === today ? 'font-semibold text-bordo' : ''}`}>{Number(d.slice(8))}</div>
+          <div key={d} className={`border-b border-l border-line px-3 py-2.5 ${d === today ? 'bg-bordo-50/50' : ''}`}>
+            <div className={`eyebrow ${d === today ? 'text-bordo' : ''}`}>{WEEKDAYS[(new Date(d + 'T12:00:00Z').getUTCDay() + 6) % 7]}</div>
+            <div className={`num text-[1.6rem] font-light leading-tight ${d === today ? 'font-medium text-bordo' : ''}`}>{Number(d.slice(8))}</div>
           </div>
         ))}
         {/* dia inteiro: pendências sem horário e eventos de dia inteiro */}
-        <div className="border-b border-line px-1 py-1 text-right text-[10px] text-mute">dia todo</div>
+        <div className="meta border-b border-line px-1 py-1 text-right text-[9.5px] uppercase tracking-wider text-mute">dia todo</div>
         {days.map(d => (
           <div key={d} data-testid={`allday-${d}`} className="space-y-1 border-b border-l border-line p-1 min-h-10"
             onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData('text/task'); if (id) onDropTask(id, d, null) }}>
@@ -209,7 +209,7 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
           </div>
         ))}
         <div className="relative">
-          {hours.map(h => <div key={h} style={{ height: PX }} className="border-b border-line/70 pr-1.5 text-right text-[10px] text-mute">{h}h</div>)}
+          {hours.map(h => <div key={h} style={{ height: PX }} className="meta border-b border-line/70 pr-1.5 pt-0.5 text-right text-[10px] text-mute">{String(h).padStart(2, '0')}h</div>)}
         </div>
         {days.map(d => {
           const items = [
@@ -217,7 +217,7 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
               const s = spDate(new Date(e.start)) === d ? spMinutes(new Date(e.start)) : 0
               const en = spDate(new Date(e.end)) === d ? spMinutes(new Date(e.end)) : 24 * 60
               return { key: `e${i}`, start: s, end: Math.max(en, s + 15), node: (
-                <div title={`${e.title} · ${hhmm(s)}–${hhmm(en)}`} data-testid="grid-event" className={`h-full overflow-hidden rounded-md border px-1.5 py-0.5 text-[11px] leading-tight ${e.owner_id === me ? 'border-line bg-[#ece8e2] text-ink/80' : 'border-dashed border-[#d6cfc6] bg-off text-mute italic'}`}>
+                <div title={`${e.title} · ${hhmm(s)}–${hhmm(en)}`} data-testid="grid-event" className={`h-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-[11px] leading-tight ${e.owner_id === me ? 'border-line bg-[#ece8e2] text-ink/80' : 'border-dashed border-[#d6cfc6] bg-off text-mute italic'}`}>
                   <div className="font-medium truncate">{e.title}</div><div className="text-[10px] text-mute">{hhmm(s)}–{hhmm(en)}</div>
                 </div>) }
             }),
@@ -226,7 +226,7 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
               const end = Math.min(H1 * 60, Math.max(H0 * 60 + 45, hh * 60 + mm)) // mantém o bloco dentro da grade
               return { key: t.id, start: end - 45, end, node: (
                 <button draggable onDragStart={e => e.dataTransfer.setData('text/task', t.id)} onClick={() => onOpen(t.id)} data-testid="grid-task"
-                  className={`h-full w-full overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm ${t.status === 'concluida' ? 'border-l-ok bg-ok-50 text-mute line-through' : isTimePassed(t) ? 'border-l-late bg-late-50 text-late' : 'border-l-bordo bg-bordo-50 text-bordo'}`}>
+                  className={`h-full w-full overflow-hidden rounded-sm border-l-[3px] px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm ${t.status === 'concluida' ? 'border-l-ok bg-ok-50 text-mute line-through' : isTimePassed(t) ? 'border-l-late bg-late-50 text-late' : 'border-l-bordo bg-bordo-50 text-bordo'}`}>
                   <div className="font-semibold truncate">{t.title}</div><div className="text-[10px] opacity-80">{timeLabel(t)}</div>
                 </button>) }
             }),

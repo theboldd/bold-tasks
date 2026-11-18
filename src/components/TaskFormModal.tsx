@@ -66,18 +66,17 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
     if (id) { toast('Captura registrada em “A classificar”'); onClose() }
   }
 
-  const err = (cond: boolean) => tried && cond ? 'border-late' : ''
-
+  
   return (
     <Modal open={open} onClose={onClose} title="Nova pendência">
-      <div className="mb-5 inline-flex rounded-full border border-line bg-off p-1 text-sm" role="tablist">
-        <button role="tab" aria-selected={mode === 'full'} className={`rounded-full px-4 py-1.5 ${mode === 'full' ? 'bg-paper shadow-sm font-medium' : 'text-mute'}`} onClick={() => setMode('full')}>Cadastro</button>
-        <button role="tab" aria-selected={mode === 'quick'} className={`rounded-full px-4 py-1.5 inline-flex items-center gap-1.5 ${mode === 'quick' ? 'bg-paper shadow-sm font-medium' : 'text-mute'}`} onClick={() => setMode('quick')}><Zap size={14} />Adicionar rapidamente</button>
+      <div className="mb-6 flex gap-6 border-b border-line text-[13px]" role="tablist">
+        <button role="tab" aria-selected={mode === 'full'} className={`-mb-px border-b-2 pb-2.5 transition ${mode === 'full' ? 'border-bordo text-ink' : 'border-transparent text-mute hover:text-ink'}`} onClick={() => setMode('full')}>Cadastro</button>
+        <button role="tab" aria-selected={mode === 'quick'} className={`-mb-px inline-flex items-center gap-1.5 border-b-2 pb-2.5 transition ${mode === 'quick' ? 'border-bordo text-ink' : 'border-transparent text-mute hover:text-ink'}`} onClick={() => setMode('quick')}><Zap size={13} strokeWidth={1.6} />Adicionar rapidamente</button>
       </div>
 
       {mode === 'quick' ? (
         <form onSubmit={submitQuick} className="space-y-4">
-          <textarea ref={el => { firstRef.current = el }} aria-label="Texto da captura" className="field min-h-28 text-base" placeholder="Ex.: Rebeca precisa aprovar a proposta do cliente até sexta."
+          <textarea ref={el => { firstRef.current = el }} aria-label="Texto da captura" className="w-full resize-none border-0 border-b border-ink bg-transparent pb-3 font-serif text-[1.6rem] leading-snug outline-none placeholder:text-mute/60 min-h-32" placeholder="Ex.: Rebeca precisa aprovar a proposta do cliente até sexta."
             value={quick} onChange={e => setQuick(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitQuick(e) }} />
           <p className="text-xs text-mute">Fica registrada como <strong className="text-wait">A classificar</strong>. Depois você completa responsável, categoria, prazo e prioridade.</p>
@@ -90,14 +89,14 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
         <form onSubmit={submitFull} className="space-y-4">
           <div>
             <label className="eyebrow mb-1.5 block" htmlFor="nt-title">Título *</label>
-            <input id="nt-title" ref={el => { firstRef.current = el }} className={`field text-base ${err(!title.trim())}`} value={title} onChange={e => setTitle(e.target.value)} placeholder="O que precisa ser feito?" maxLength={300} />
+            <input id="nt-title" ref={el => { firstRef.current = el }} className={`w-full border-0 border-b bg-transparent pb-2 font-serif text-[1.7rem] leading-tight outline-none placeholder:text-mute/50 focus:border-bordo ${tried && !title.trim() ? 'border-late' : 'border-ink'}`} value={title} onChange={e => setTitle(e.target.value)} placeholder="O que precisa ser feito?" maxLength={300} />
           </div>
           <div>
             <span className="eyebrow mb-1.5 block">Responsável *</span>
             <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Responsável">
               {[...members.map(m => ({ id: m.user_id, label: m.profile.name })), ...(members.length > 1 ? [{ id: 'both', label: 'Ambas' }] : [])].map(o => (
                 <button type="button" role="radio" aria-checked={assigned === o.id} key={o.id} onClick={() => setAssigned(o.id)}
-                  className={`rounded-full border px-4 py-1.5 text-sm transition ${assigned === o.id ? 'border-bordo bg-bordo text-off' : `border-line bg-paper hover:border-ink ${tried && !assigned ? 'border-late' : ''}`}`}>
+                  className={`border px-4 py-2 text-[13px] transition ${assigned === o.id ? 'border-bordo bg-bordo text-off' : `border-line bg-transparent hover:border-ink ${tried && !assigned ? 'border-late' : ''}`}`}>
                   {o.label}
                 </button>
               ))}

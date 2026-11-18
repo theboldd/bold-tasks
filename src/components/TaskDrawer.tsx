@@ -63,10 +63,10 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
   }
 
   return (
-    <div className="fixed inset-0 z-[55] flex justify-end bg-ink/20 fade-in" onMouseDown={onClose}>
-      <aside aria-label="Detalhes da pendência" className="slide-in h-full w-full md:max-w-[560px] overflow-y-auto bg-paper shadow-2xl" onMouseDown={e => e.stopPropagation()}>
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-5 py-3 backdrop-blur">
-          <span className="eyebrow">{task ? `Pendência #${task.seq}` : 'Pendência'}</span>
+    <div className="fixed inset-0 z-[55] flex justify-end bg-ink/25 backdrop-blur-[1px] fade-in" onMouseDown={onClose}>
+      <aside aria-label="Detalhes da pendência" className="slide-in h-full w-full md:max-w-[580px] overflow-y-auto bg-paper shadow-[-30px_0_80px_-40px_rgba(21,19,19,.45)]" onMouseDown={e => e.stopPropagation()}>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-6 py-3 backdrop-blur">
+          <span className="eyebrow">{task ? <>Pendência <span className="num text-ink">Nº {String(task.seq).padStart(3, '0')}</span></> : 'Pendência'}</span>
           <button className="btn-text rounded-full" onClick={onClose} aria-label="Fechar detalhes"><X size={18} /></button>
         </div>
         {!task ? (
@@ -76,8 +76,8 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
         )}
 
         {task && (
-          <div className="px-5 pb-10">
-            <div className="mb-4 flex gap-5 border-b border-line text-sm">
+          <div className="px-6 pb-10">
+            <div className="mb-4 flex gap-6 border-b border-line text-[13px]">
               {(['comments', 'history'] as const).map(t => (
                 <button key={t} onClick={() => setTab(t)} className={`-mb-px border-b-2 pb-2.5 ${tab === t ? 'border-bordo font-medium text-ink' : 'border-transparent text-mute'}`}>
                   {t === 'comments' ? `Comentários (${comments.length})` : 'Histórico'}
@@ -153,22 +153,22 @@ function TaskBody({ task }: { task: Task }) {
   const save = (patch: Parameters<typeof updateTask>[1]) => updateTask(task.id, patch)
 
   return (
-    <div className="px-5 pt-5 pb-6">
+    <div className="px-6 pt-6 pb-6">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <StatusPill status={task.status} />
         {task.needs_triage && <TriageBadge />}
-        {late && <span className="rounded bg-late-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-late">Atrasada</span>}
-        {isTimePassed(task) && <span className="rounded bg-late-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-late">Horário passou</span>}
-        {task.is_shared && <span className="rounded bg-bordo-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-bordo">Das duas</span>}
-        {task.rollover_count > 0 && !done && <span className="rounded bg-wait-50 px-1.5 py-0.5 text-[10px] font-semibold text-wait">↻ transferida {task.rollover_count}×</span>}
+        {late && <span className="meta border border-late/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[.14em] text-late">Atrasada</span>}
+        {isTimePassed(task) && <span className="meta border border-late/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[.14em] text-late">Horário passou</span>}
+        {task.is_shared && <span className="meta border border-bordo/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[.14em] text-bordo">Das duas</span>}
+        {task.rollover_count > 0 && !done && <span className="meta border border-wait/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[.1em] text-wait">↻ transferida {task.rollover_count}×</span>}
       </div>
-      <textarea aria-label="Título" className={`w-full resize-none bg-transparent font-serif text-[1.7rem] leading-tight outline-none ${done ? 'text-mute line-through decoration-1' : ''}`}
+      <textarea aria-label="Título" className={`display w-full resize-none bg-transparent text-[2.1rem] outline-none ${done ? 'text-mute line-through decoration-1' : ''}`}
         rows={Math.min(4, Math.ceil(title.length / 34) || 1)} value={title} onChange={e => setTitle(e.target.value)}
         onBlur={() => { if (title.trim() && title.trim() !== task.title) save({ title: title.trim() }); else setTitle(task.title) }}
         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLTextAreaElement).blur() } }} />
 
       {task.needs_triage && (
-        <div className="mt-3 rounded-2xl border border-[#e8dcc3] bg-wait-50 p-4">
+        <div className="mt-3 border-l-2 border-wait bg-wait-50/60 p-4">
           <div className="eyebrow mb-2 text-wait">Classificar captura</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <select aria-label="Responsável da captura" className="field" value={triAssigned} onChange={e => setTriAssigned(e.target.value)}>
@@ -199,7 +199,7 @@ function TaskBody({ task }: { task: Task }) {
       </div>
 
       {task.is_shared && (
-        <div className="mt-4 rounded-2xl border border-line bg-off/60 p-3" data-testid="parts">
+        <div className="mt-5 border-y border-line py-3" data-testid="parts">
           <div className="eyebrow mb-2">Partes</div>
           <ul className="space-y-1.5 text-sm">
             {members.map(m => {
@@ -216,7 +216,7 @@ function TaskBody({ task }: { task: Task }) {
         </div>
       )}
 
-      <dl className="mt-6 grid grid-cols-[120px_1fr] items-center gap-x-3 gap-y-3 text-sm">
+      <dl className="mt-6 grid grid-cols-[120px_1fr] items-center gap-x-3 gap-y-3 border-t border-line pt-5 text-sm [&>dt]:meta [&>dt]:text-[11px] [&>dt]:uppercase [&>dt]:tracking-[.12em]">
         {!task.needs_triage && <>
           <dt className="text-mute">Responsável</dt>
           <dd>

@@ -21,7 +21,7 @@ async function login(email, viewport = { width: 1440, height: 900 }) {
   await page.getByLabel('E-mail').fill(email)
   await page.getByLabel('Senha', { exact: true }).fill(PW)
   await page.getByRole('button', { name: 'Entrar', exact: true }).click()
-  await page.getByRole('heading', { level: 1 }).filter({ hasText: /Bom dia|Boa tarde|Boa noite/ }).waitFor({ timeout: 20000 })
+  await page.getByRole('heading', { level: 1, name: /O que precisa acontecer/ }).waitFor({ timeout: 20000 })
   return { ctx, page }
 }
 const v = await login(V), r = await login(R)

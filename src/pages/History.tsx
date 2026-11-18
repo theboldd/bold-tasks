@@ -76,11 +76,11 @@ export function HistoryPage() {
   return (
     <div>
       <PageHeader eyebrow="Rastreabilidade" title="Histórico">
-        <select aria-label="Filtrar por pessoa" className="field w-auto py-2" value={who} onChange={e => setWho(e.target.value)}>
+        <select aria-label="Filtrar por pessoa" className="field-line w-auto text-[13px]" value={who} onChange={e => setWho(e.target.value)}>
           <option value="">Todas as pessoas</option>
           {members.map(m => <option key={m.user_id} value={m.user_id}>{m.profile.name}</option>)}
         </select>
-        <select aria-label="Filtrar por ação" className="field w-auto py-2" value={action} onChange={e => setAction(e.target.value)}>
+        <select aria-label="Filtrar por ação" className="field-line w-auto text-[13px]" value={action} onChange={e => setAction(e.target.value)}>
           {ACTIONS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
         </select>
       </PageHeader>
@@ -88,10 +88,10 @@ export function HistoryPage() {
         <div className="space-y-8">
           {groups.map(g => (
             <section key={g.day}>
-              <h2 className="eyebrow mb-3">{g.day}</h2>
-              <ul className="card divide-y divide-line">
+              <h2 className="mb-2 flex items-baseline gap-3 border-b border-ink/80 pb-2 font-serif text-[1.5rem] first-letter:uppercase">{g.day}<span className="num text-[12px] text-mute">{String(g.rows.length).padStart(2, '0')}</span></h2>
+              <ul className="divide-y divide-line">
                 {g.rows.map(a => (
-                  <li key={a.id} className="flex items-start gap-3 px-4 py-3 text-sm" data-testid="history-item">
+                  <li key={a.id} className="flex items-start gap-3 px-1 py-3 text-[14px]" data-testid="history-item">
                     <Avatar name={a.user_id ? memberName(a.user_id) : 'Sistema'} idx={memberColorIndex(members, a.user_id)} size={28} />
                     <div className="min-w-0 flex-1">
                       <div><strong className="font-semibold">{a.user_id ? firstName(memberName(a.user_id)) : 'Sistema'}</strong> {describeActivity(a, memberName)}</div>
@@ -100,7 +100,7 @@ export function HistoryPage() {
                         : <span className="text-mute line-through">{titleOf(a.task_id)}</span>}
                       {a.action === 'commented' && a.new_value && <p className="mt-1 border-l-2 border-line pl-3 italic text-mute">{a.new_value}</p>}
                     </div>
-                    <span className="shrink-0 text-xs text-mute tabular-nums">{formatDateTime(a.created_at).split(', ').pop()}</span>
+                    <span className="meta shrink-0 text-[11px] text-mute">{formatDateTime(a.created_at).split(', ').pop()}</span>
                   </li>
                 ))}
               </ul>

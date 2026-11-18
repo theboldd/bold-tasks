@@ -43,25 +43,24 @@ export function Login() {
     <div className="min-h-full grid lg:grid-cols-[1.1fr_1fr]">
       <section className="relative hidden lg:flex flex-col justify-between bg-bordo p-14 text-off overflow-hidden">
         <div>
-          <div className="font-serif text-4xl font-bold tracking-tight">BOLD</div>
-          <div className="font-accent italic text-3xl text-off/70 -mt-1">tasks</div>
+          <div className="display text-5xl font-semibold">BOLD</div>
+          <div className="meta mt-2 text-[11px] font-semibold uppercase tracking-[.45em] text-off/60">Tasks</div>
         </div>
         <div className="max-w-md">
-          <p className="font-serif text-[2.7rem] leading-[1.08]">Conversas viram <span className="font-accent italic font-normal">responsabilidades</span> claras.</p>
+          <div className="mb-6 h-px w-12 bg-off/40" />
+          <p className="display text-[3.6rem]">Conversas viram <em className="font-normal italic">responsabilidades</em> claras.</p>
           <p className="mt-6 text-off/60 text-sm leading-relaxed">A central compartilhada de execução da The Bold. Cada pendência com um responsável, um prazo e um histórico.</p>
         </div>
         <div className="eyebrow text-off/40">The Bold · Uso interno</div>
-        <div aria-hidden className="pointer-events-none absolute -right-24 -bottom-24 h-96 w-96 rounded-full border border-off/10" />
-        <div aria-hidden className="pointer-events-none absolute -right-8 -bottom-8 h-64 w-64 rounded-full border border-off/10" />
       </section>
       <section className="flex items-center justify-center p-6 md:p-12">
         <form onSubmit={submit} className="w-full max-w-sm" aria-label={mode === 'login' ? 'Entrar' : 'Primeiro acesso'}>
-          <div className="lg:hidden mb-10">
-            <div className="font-serif text-3xl font-bold text-bordo">BOLD</div>
-            <div className="font-accent italic text-2xl text-mute -mt-1">tasks</div>
+          <div className="lg:hidden mb-12">
+            <div className="display text-4xl font-semibold text-bordo">BOLD</div>
+            <div className="meta mt-1 text-[10px] font-semibold uppercase tracking-[.45em] text-mute">Tasks</div>
           </div>
           <div className="eyebrow mb-2">{mode === 'login' ? 'Bem-vinda de volta' : 'Primeiro acesso'}</div>
-          <h1 className="font-serif text-3xl mb-8">{mode === 'login' ? 'Entrar' : 'Criar sua senha'}</h1>
+          <h1 className="display mb-8 border-b border-ink pb-4 text-[2.8rem]">{mode === 'login' ? 'Entrar' : 'Criar sua senha'}</h1>
           <label className="eyebrow mb-1.5 block" htmlFor="email">E-mail</label>
           <input id="email" type="email" autoComplete="email" required className="field mb-4" value={email} onChange={e => setEmail(e.target.value)} />
           <label className="eyebrow mb-1.5 block" htmlFor="password">Senha</label>
@@ -72,8 +71,8 @@ export function Login() {
             <label className="eyebrow mb-1.5 block" htmlFor="password2">Repita a senha</label>
             <input id="password2" type="password" autoComplete="new-password" required className="field mb-4" value={password2} onChange={e => setPassword2(e.target.value)} />
           </>}
-          {error && <p role="alert" className="mb-4 rounded-xl bg-late-50 px-3 py-2 text-sm text-late">{error}</p>}
-          {info && <p role="status" className="mb-4 rounded-xl bg-ok-50 px-3 py-2 text-sm text-ok">{info}</p>}
+          {error && <p role="alert" className="mb-4 border-l-2 border-late pl-3 text-sm text-late">{error}</p>}
+          {info && <p role="status" className="mb-4 border-l-2 border-ok pl-3 text-sm text-ok">{info}</p>}
           <button className="btn btn-primary w-full justify-center py-3" disabled={busy}>{busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : 'Criar conta e entrar'}</button>
           <p className="mt-6 text-center text-sm text-mute">
             {mode === 'login'

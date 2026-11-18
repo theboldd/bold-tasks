@@ -23,7 +23,7 @@ async function login(email, viewport) {
   await page.getByLabel('E-mail').fill(email)
   await page.getByLabel('Senha', { exact: true }).fill(PW)
   await page.getByRole('button', { name: 'Entrar', exact: true }).click()
-  await page.getByRole('heading', { level: 1 }).filter({ hasText: /Bom dia|Boa tarde|Boa noite/ }).waitFor({ timeout: 20000 })
+  await page.getByRole('heading', { level: 1, name: /O que precisa acontecer/ }).waitFor({ timeout: 20000 })
   return { ctx, page }
 }
 
@@ -255,7 +255,7 @@ await step('histórico geral', async () => {
 await step('dashboard reflete indicadores', async () => {
   await v.page.goto(BASE + '/')
   const late = await v.page.getByTestId('kpi-Atrasadas').innerText()
-  ok('dashboard reflete indicadores', Number(late.split('\n')[0]) >= 1, late.replace('\n', ' '))
+  ok('dashboard reflete indicadores', Number((late.match(/\d+/) || ['0'])[0]) >= 1, late.replace(/\n/g, ' '))
 })
 
 await step('exclusão lógica', async () => {

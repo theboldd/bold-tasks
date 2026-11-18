@@ -17,8 +17,8 @@ export function SettingsPage() {
       <PageHeader eyebrow="Conta" title="Configurações" />
       <PushCard />
       <GoogleCard />
-      <section className="card p-6 mb-6">
-        <h2 className="font-serif text-xl mb-4">Perfil</h2>
+      <section className="mb-10 border-t border-ink/80 pt-5">
+        <h2 className="font-serif text-[1.7rem] leading-none mb-4">Perfil</h2>
         <form className="flex flex-wrap items-end gap-3" onSubmit={async e => {
           e.preventDefault(); if (!name.trim()) return
           setBusy(true)
@@ -31,8 +31,8 @@ export function SettingsPage() {
         </form>
         <p className="mt-3 text-sm text-mute">E-mail de acesso: {me.email}</p>
       </section>
-      <section className="card p-6 mb-6">
-        <h2 className="font-serif text-xl mb-4">Alterar senha</h2>
+      <section className="mb-10 border-t border-ink/80 pt-5">
+        <h2 className="font-serif text-[1.7rem] leading-none mb-4">Alterar senha</h2>
         <form className="flex flex-wrap items-end gap-3" onSubmit={async e => {
           e.preventDefault(); if (pw.length < 8) return toast('Mínimo de 8 caracteres', 'error')
           setBusy(true)
@@ -44,8 +44,8 @@ export function SettingsPage() {
           <button className="btn btn-primary" disabled={busy || !pw}>Alterar</button>
         </form>
       </section>
-      <section className="card p-6">
-        <h2 className="font-serif text-xl mb-1">Workspace</h2>
+      <section className="mb-10 border-t border-ink/80 pt-5">
+        <h2 className="font-serif text-[1.7rem] leading-none mb-2">Workspace</h2>
         <p className="text-sm text-mute mb-4">{workspace.name} · sincronização {realtimeStatus === 'SUBSCRIBED' ? <span className="text-ok">em tempo real</span> : <span className="text-wait">reconectando…</span>}</p>
         <ul className="divide-y divide-line text-sm">
           {members.map(m => <li key={m.user_id} className="flex justify-between py-2"><span>{m.profile.name}</span><span className="text-mute">{m.profile.email}</span></li>)}
@@ -68,10 +68,10 @@ function PushCard() {
   }
   useEffect(() => { refresh() }, [])
   return (
-    <section className="card p-6 mb-6" data-testid="push-card">
-      <h2 className="font-serif text-xl mb-1 flex items-center gap-2"><Bell size={18} />Notificações neste aparelho</h2>
+    <section className="mb-10 border-t border-ink/80 pt-5" data-testid="push-card">
+      <h2 className="font-serif text-[1.7rem] leading-none mb-2 flex items-center gap-2"><Bell size={18} />Notificações neste aparelho</h2>
       <p className="text-sm text-mute mb-4">Lembretes como “Rebeca, tal pendência precisa ser resolvida até o final da manhã”, o resumo do dia às 8h e os avisos de conclusão chegam aqui mesmo com o BOLD TASKS fechado. Ative em cada aparelho que você usa (computador e celular).</p>
-      {state === 'ios-install' && <p className="rounded-xl bg-wait-50 px-3 py-2 text-sm text-wait">No iPhone: toque em <strong>Compartilhar</strong> → <strong>Adicionar à Tela de Início</strong>, abra o BOLD TASKS pelo ícone e volte aqui para ativar.</p>}
+      {state === 'ios-install' && <p className="border-l-2 border-wait pl-3 text-sm text-wait">No iPhone: toque em <strong>Compartilhar</strong> → <strong>Adicionar à Tela de Início</strong>, abra o BOLD TASKS pelo ícone e volte aqui para ativar.</p>}
       {state === 'unsupported' && <p className="text-sm text-late">Este navegador não aceita notificações. Use Chrome, Edge ou Safari atualizados.</p>}
       {state === 'denied' && <p className="text-sm text-late">As notificações foram bloqueadas neste navegador. Libere nas configurações do site (ícone de cadeado ao lado do endereço) e recarregue a página.</p>}
       {(state === 'on' || state === 'off') && (
@@ -79,7 +79,7 @@ function PushCard() {
           {state === 'off'
             ? <button className="btn btn-primary" disabled={busy} onClick={async () => { setBusy(true); const r = await enablePush(); setBusy(false); toast(r === 'ok' ? 'Notificações ativadas neste aparelho' : r === 'denied' ? 'Permissão negada pelo navegador' : 'Não foi possível ativar', r === 'ok' ? 'ok' : 'error'); refresh() }}>Ativar notificações</button>
             : <>
-                <span className="rounded-full bg-ok-50 px-3 py-1.5 text-sm text-ok">Ativadas neste aparelho</span>
+                <span className="meta inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[.14em] text-ok"><span className="h-1.5 w-1.5 rounded-full bg-ok" />Ativadas neste aparelho</span>
                 <button className="btn btn-ghost" disabled={busy} onClick={async () => { setBusy(true); const { error } = await supabase.rpc('send_test_push'); setBusy(false); toast(error ? error.message : 'Teste enviado — deve chegar em segundos', error ? 'error' : 'ok') }}>Enviar teste</button>
                 <button className="btn btn-text" onClick={async () => { await disablePush(); refresh() }}>Desativar</button>
               </>}
@@ -118,8 +118,8 @@ function GoogleCard() {
     setSaved({ ics_url: v, share_details: share }); await test(); setBusy(false)
   }
   return (
-    <section className="card p-6 mb-6" data-testid="google-card">
-      <h2 className="font-serif text-xl mb-1 flex items-center gap-2"><CalendarDays size={18} />Google Agenda</h2>
+    <section className="mb-10 border-t border-ink/80 pt-5" data-testid="google-card">
+      <h2 className="font-serif text-[1.7rem] leading-none mb-2 flex items-center gap-2"><CalendarDays size={18} />Google Agenda</h2>
       <p className="text-sm text-mute mb-3">Seus compromissos aparecem no Calendário do BOLD TASKS, na grade de horários, para encaixar as pendências nas janelas livres.</p>
       <ol className="mb-4 list-decimal space-y-0.5 pl-5 text-sm text-mute">
         <li>No Google Agenda (computador), abra <strong>Configurações</strong> (engrenagem).</li>

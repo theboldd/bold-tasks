@@ -34,7 +34,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[80] flex flex-col gap-2 items-center pointer-events-none">
         {toasts.map(t => (
-          <div key={t.id} role="status" className={`fade-in pointer-events-auto rounded-full px-4 py-2 text-sm shadow-lg ${t.kind === 'error' ? 'bg-late text-white' : 'bg-ink text-off'}`}>{t.text}</div>
+          <div key={t.id} role="status" className={`rise-in pointer-events-auto rounded-sm px-4 py-2.5 text-[13px] shadow-[0_14px_40px_-18px_rgba(21,19,19,.6)] ${t.kind === "error" ? "bg-late text-white" : "bg-ink text-off"}`}>{t.text}</div>
         ))}
       </div>
     </ToastContext.Provider>
