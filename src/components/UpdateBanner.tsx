@@ -26,7 +26,7 @@ export function UpdateBanner() {
   }, [])
   if (!stale) return null
   return (
-    <div role="status" data-testid="update-banner" className="rise-in fixed left-1/2 top-3 z-[90] flex -translate-x-1/2 items-center gap-3 rounded-full bg-ink px-4 py-2 text-[13px] text-off shadow-[0_14px_40px_-18px_rgba(21,19,19,.6)]">
+    <div role="status" data-testid="update-banner" className="rise-in fixed left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[90] flex -translate-x-1/2 items-center gap-3 rounded-full bg-ink px-4 py-2 text-[13px] text-off shadow-[0_14px_40px_-18px_rgba(21,19,19,.6)]">
       Há uma versão nova do BOLD TASKS.
       <button className="inline-flex items-center gap-1.5 rounded-full bg-off/15 px-3 py-1 font-medium transition hover:bg-off/25" onClick={() => window.location.reload()}><RefreshCw size={13} />Atualizar</button>
     </div>

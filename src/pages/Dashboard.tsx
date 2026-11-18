@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, ArrowRight, Inbox, Plus, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Inbox, Plus, RefreshCw, Zap } from 'lucide-react'
+import { dailyMessage } from '../lib/messages'
 import { useWs } from '../lib/store'
 import { useUI } from '../lib/ui'
 import { PRIORITY_RANK, addDaysISO, dayLabel, firstName, isDueToday, isForToday, isOpen, isOverdue, isTimePassed, todayISO, weekStartISO } from '../lib/labels'
@@ -19,6 +20,7 @@ export function Dashboard() {
   const { me, other, tasks, tasksLoaded, isMine, partsOf } = useWs()
   const { openNew } = useUI()
   const today = todayISO()
+  const [shuffle, setShuffle] = useState(0)
 
   const s = useMemo(() => {
     const open = tasks.filter(isOpen)
@@ -66,14 +68,17 @@ export function Dashboard() {
       <div className="mb-8 md:mb-10">
         <div className="eyebrow mb-2 first-letter:uppercase">{dateStr}</div>
         <h1 className="display text-[2.4rem] md:text-[3.4rem]">{greet}, <em className="font-normal italic text-bordo">{firstName(me.name)}</em>.</h1>
-        <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-mute" data-testid="summary">
-          {s.myToday.length
-            ? <>Hoje você tem <strong className="font-semibold text-ink">{s.myToday.length} {s.myToday.length === 1 ? 'pendência' : 'pendências'}</strong>
-                {rolled > 0 && <>, {rolled} {rolled === 1 ? 'veio' : 'vieram'} de dias anteriores</>}
-                {passed > 0 && <>, <span className="text-late">{passed} já {passed === 1 ? 'passou' : 'passaram'} do horário</span></>}.
-                {' '}O que não for concluído hoje passa para amanhã automaticamente.</>
-            : s.myOpen.length ? 'Nada para hoje. Bom momento para adiantar as próximas.' : 'Nenhuma pendência sua em aberto.'}
+        <p className="mt-3 flex max-w-2xl items-start gap-2 text-[16.5px] leading-relaxed text-ink/85" data-testid="summary">
+          <span>{dailyMessage({ name: firstName(me.name), userId: me.id, today: s.myToday.length, late: passed > 0 || s.myOverdue.length > 0, open: s.myOpen.length, seedExtra: shuffle })}</span>
+          <button aria-label="Outra mensagem" title="Outra mensagem" data-testid="shuffle-message" onClick={() => setShuffle(x => x + 1)} className="mt-1 shrink-0 rounded-full p-1 text-mute/70 transition hover:rotate-180 hover:text-bordo duration-300"><RefreshCw size={13} /></button>
         </p>
+        {s.myToday.length > 0 && (
+          <p className="mt-1.5 text-[13px] text-mute">
+            {[rolled > 0 && `${rolled} ${rolled === 1 ? 'veio' : 'vieram'} de dias anteriores`, passed > 0 && `${passed} já ${passed === 1 ? 'passou' : 'passaram'} do horário`, 'o que não for concluído hoje passa para amanhã automaticamente'].filter(Boolean).map((x, i, arr) => (
+              <span key={i} className={i === 1 && passed > 0 && rolled > 0 || (i === 0 && passed > 0 && rolled === 0) ? 'text-late' : ''}>{i === 0 ? String(x).charAt(0).toUpperCase() + String(x).slice(1) : x}{i < arr.length - 1 ? ' · ' : '.'}</span>
+            ))}
+          </p>
+        )}
       </div>
 
       {/* indicadores */}

@@ -110,14 +110,14 @@ export function Layout({ children }: { children: ReactNode }) {
         <aside className="fixed inset-y-0 left-0 hidden w-64 bg-brand lg:block">{sidebar}</aside>
         {menuOpen && (
           <div className="fixed inset-0 z-[58] bg-ink/40 lg:hidden fade-in" onClick={() => setMenuOpen(false)}>
-            <aside className="relative h-full w-72 bg-brand slide-in" onClick={e => e.stopPropagation()}>
-              <button className="absolute right-4 top-6 text-cream/70" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X /></button>
+            <aside className="relative h-full w-72 bg-brand pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] slide-in" onClick={e => e.stopPropagation()}>
+              <button className="absolute right-4 top-[calc(env(safe-area-inset-top)+1.5rem)] text-cream/70" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X /></button>
               {sidebar}
             </aside>
           </div>
         )}
         <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
-          <header className="sticky top-0 z-40 flex items-center gap-3 border-b border-line bg-off/92 px-4 md:px-10 py-3 backdrop-blur">
+          <header className="sticky top-0 z-40 flex items-center gap-3 border-b border-line bg-off/92 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur md:px-10">
             <button className="lg:hidden -ml-1 p-1.5" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={21} strokeWidth={1.5} /></button>
             <span className="lg:hidden display mr-1 text-xl font-semibold text-bordo">BOLD</span>
             <GlobalSearch />
@@ -127,7 +127,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 md:px-10 py-7 md:py-12 pb-28">{children}</main>
         </div>
         {/* botão permanente de adição (celular) */}
-        <button aria-label="Nova pendência" onClick={() => openNew()} className="fixed bottom-5 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-bordo text-off shadow-[0_12px_30px_-10px_rgba(58,0,0,.6)] transition active:scale-95 md:hidden" data-testid="fab-new">
+        <button aria-label="Nova pendência" onClick={() => openNew()} className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-bordo text-off shadow-[0_12px_30px_-10px_rgba(58,0,0,.6)] transition active:scale-95 md:hidden" data-testid="fab-new">
           <Plus size={24} strokeWidth={1.6} />
         </button>
       </div>
@@ -176,7 +176,7 @@ function NotificationBell() {
         {unread > 0 && <span data-testid="bell-count" className="meta absolute right-0 top-0 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-bordo px-1 text-[9.5px] font-bold text-off">{unread > 99 ? '99+' : unread}</span>}
       </button>
       {open && (
-        <div className="rise-in fixed md:absolute left-3 right-3 md:left-auto md:right-0 top-16 md:top-12 z-50 md:w-[420px] overflow-hidden border border-line bg-paper shadow-[0_24px_60px_-28px_rgba(21,19,19,.45)]" data-testid="notif-panel">
+        <div className="rise-in fixed md:absolute left-3 right-3 md:left-auto md:right-0 top-[calc(env(safe-area-inset-top)+4.25rem)] md:top-12 z-50 md:w-[420px] overflow-hidden rounded-2xl border border-line bg-paper shadow-[0_24px_60px_-28px_rgba(21,19,19,.45)]" data-testid="notif-panel">
           <div className="flex items-end justify-between border-b border-ink px-5 pt-4 pb-3">
             <div><div className="eyebrow mb-0.5">{unread ? `${unread} não lida${unread > 1 ? 's' : ''}` : 'Em dia'}</div><span className="display text-2xl">Notificações</span></div>
             {unread > 0 && <button className="meta link-edit text-[10.5px] uppercase tracking-[.16em] text-bordo" onClick={markAllRead}>Marcar todas como lidas</button>}

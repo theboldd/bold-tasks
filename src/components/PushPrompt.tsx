@@ -41,7 +41,7 @@ export function PushPrompt() {
   const later = () => { snooze(3); setMode(null) }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[85] p-3 md:inset-x-auto md:bottom-6 md:right-6 md:w-[380px] md:p-0" role="dialog" aria-label="Ativar notificações" data-testid="push-prompt">
+    <div className="fixed inset-x-0 bottom-0 z-[85] p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-0 md:inset-x-auto md:bottom-6 md:right-6 md:w-[380px] md:p-0" role="dialog" aria-label="Ativar notificações" data-testid="push-prompt">
       <div className="rise-in relative rounded-2xl border border-line bg-paper p-5 shadow-[0_24px_60px_-24px_rgba(21,19,19,.55)]">
         <button aria-label="Fechar" className="absolute right-3 top-3 rounded-full p-1.5 text-mute hover:bg-line/60 hover:text-ink" onClick={later}><X size={16} /></button>
         <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-bordo-50 text-bordo"><BellRing size={19} strokeWidth={1.7} /></div>

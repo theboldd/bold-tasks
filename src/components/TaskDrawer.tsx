@@ -67,7 +67,7 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
   return (
     <div className="fixed inset-0 z-[55] flex justify-end bg-ink/25 backdrop-blur-[1px] fade-in" onMouseDown={onClose}>
       <aside aria-label="Detalhes da pendência" className="slide-in h-full w-full md:max-w-[580px] overflow-y-auto bg-paper shadow-[-30px_0_80px_-40px_rgba(21,19,19,.45)]" onMouseDown={e => e.stopPropagation()}>
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-6 py-3 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-6 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur">
           <span className="eyebrow">{task ? <>Pendência <span className="num text-ink">Nº {String(task.seq).padStart(3, '0')}</span></> : 'Pendência'}</span>
           <button className="btn-text rounded-full" onClick={onClose} aria-label="Fechar detalhes"><X size={18} /></button>
         </div>

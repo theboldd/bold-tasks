@@ -57,7 +57,7 @@ export function Modal({ open, onClose, children, title, wide }: { open: boolean;
   if (!open) return null
   return (
     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-ink/40 backdrop-blur-[2px] fade-in" onMouseDown={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={title} className={`rise-in w-full ${wide ? 'md:max-w-2xl' : 'md:max-w-xl'} max-h-[92vh] overflow-y-auto rounded-t-lg md:rounded-sm bg-paper shadow-[0_30px_80px_-30px_rgba(21,19,19,.45)]`} onMouseDown={e => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-label={title} className={`rise-in w-full ${wide ? 'md:max-w-2xl' : 'md:max-w-xl'} max-h-[calc(100dvh-env(safe-area-inset-top)-1rem)] overflow-y-auto pb-[env(safe-area-inset-bottom)] rounded-t-lg md:rounded-sm bg-paper shadow-[0_30px_80px_-30px_rgba(21,19,19,.45)]`} onMouseDown={e => e.stopPropagation()}>
         {title && (
           <div className="flex items-end justify-between gap-4 border-b border-line px-6 pt-6 pb-4 md:px-8">
             <div>
