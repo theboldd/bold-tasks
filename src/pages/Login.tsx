@@ -41,15 +41,16 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-full grid lg:grid-cols-[1.1fr_1fr]">
-      <section className="relative hidden lg:flex flex-col justify-between bg-brand p-14 text-cream overflow-hidden">
+    <div className="login-dark min-h-full grid lg:grid-cols-[1.1fr_1fr]">
+      <section className="relative hidden lg:flex flex-col justify-between overflow-hidden border-r border-[#2A2625] bg-[#0E0D0D] p-14 text-cream">
+        <div aria-hidden className="pointer-events-none absolute -left-40 bottom-[-12rem] h-[34rem] w-[34rem] rounded-full bg-[#59172D] opacity-25 blur-[120px]" />
         <div>
           <div className="display text-5xl font-semibold">BOLD</div>
           <div className="meta mt-2 text-[11px] font-semibold uppercase tracking-[.45em] text-cream/60">Tasks</div>
         </div>
         <div className="max-w-md">
-          <div className="mb-6 h-px w-12 bg-cream/40" />
-          <p className="display text-[3.6rem]">Conversas viram <em className="font-normal italic">responsabilidades</em> claras.</p>
+          <div className="mb-6 h-[2px] w-14 bg-[#8A2A40]" />
+          <p className="display text-[3.6rem]">Conversas viram <em className="font-normal italic text-[#D69AA3]">responsabilidades</em> claras.</p>
           <p className="mt-6 text-cream/60 text-sm leading-relaxed">A central compartilhada de execução da The Bold. Cada pendência com um responsável, um prazo e um histórico.</p>
         </div>
         <div className="eyebrow text-cream/40">The Bold · Uso interno</div>
@@ -57,7 +58,7 @@ export function Login() {
       <section className="flex items-center justify-center p-6 md:p-12">
         <form onSubmit={submit} className="w-full max-w-sm" aria-label={mode === 'login' ? 'Entrar' : 'Primeiro acesso'}>
           <div className="lg:hidden mb-12">
-            <div className="display text-4xl font-semibold text-bordo">BOLD</div>
+            <div className="display text-4xl font-semibold text-cream">BOLD</div>
             <div className="meta mt-1 text-[10px] font-semibold uppercase tracking-[.45em] text-mute">Tasks</div>
           </div>
           <div className="eyebrow mb-2">{mode === 'login' ? 'Bem-vinda de volta' : 'Primeiro acesso'}</div>

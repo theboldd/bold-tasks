@@ -72,15 +72,15 @@ export function Layout({ children }: { children: ReactNode }) {
     <nav className="flex h-full flex-col" aria-label="Menu principal">
       <div className="px-6 pt-7 pb-8">
         <div className="display text-[2.1rem] font-semibold leading-none tracking-tight text-cream">BOLD</div>
-        <div className="font-serif -mt-0.5 text-[1.35rem] italic text-cream/70">tasks</div>
+        <div className="font-serif -mt-0.5 text-[1.35rem] italic text-[#C98A95]">tasks</div>
       </div>
       <ul className="flex-1 space-y-0.5 overflow-y-auto px-3">
         {nav.filter(n => !(n.hideIfZero && !n.count)).map(n => (
           <li key={n.to}>
-            <NavLink to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] transition ${isActive ? 'bg-cream/10 text-cream' : 'text-cream/65 hover:bg-cream/5 hover:text-cream'}`}>
+            <NavLink to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] transition ${isActive ? 'bg-brand-accent text-cream shadow-[inset_3px_0_0_#C98A95]' : 'text-cream/65 hover:bg-cream/5 hover:text-cream'}`}>
               <n.icon size={17} strokeWidth={1.6} />
               <span className="flex-1 truncate">{n.label}</span>
-              {!!n.count && <span className={`text-xs tabular-nums ${n.to === '/a-classificar' ? 'rounded-full bg-[#e8dcc3] px-1.5 font-semibold text-[#3A0000]' : 'text-cream/50'}`}>{n.count}</span>}
+              {!!n.count && <span className={`text-xs tabular-nums ${n.to === '/a-classificar' ? 'rounded-full bg-brand-accent px-1.5 font-semibold text-cream' : 'text-cream/50'}`}>{n.count}</span>}
             </NavLink>
           </li>
         ))}
@@ -92,7 +92,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </select>
         )}
         <ThemeSwitch />
-        <NavLink to="/configuracoes" className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${isActive ? 'bg-cream/10 text-cream' : 'text-cream/65 hover:bg-cream/5 hover:text-cream'}`}><Settings size={17} strokeWidth={1.6} />Configurações</NavLink>
+        <NavLink to="/configuracoes" className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${isActive ? 'bg-brand-accent text-cream' : 'text-cream/65 hover:bg-cream/5 hover:text-cream'}`}><Settings size={17} strokeWidth={1.6} />Configurações</NavLink>
         <div className="flex items-center gap-3 px-3 py-2.5">
           <Avatar name={me.name} idx={memberColorIndex(members, me.id) === 0 ? 1 : 0} size={30} />
           <div className="min-w-0 flex-1"><div className="truncate text-[13px] text-cream">{me.name}</div><div className="meta truncate text-[10px] uppercase tracking-[.16em] text-cream/40">{workspace.name}</div></div>
@@ -107,7 +107,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <UpdateBanner />
       <PushPrompt />
       <div className="flex min-h-full">
-        <aside className="fixed inset-y-0 left-0 hidden w-64 bg-brand lg:block">{sidebar}</aside>
+        <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-black/20 bg-brand lg:block">{sidebar}</aside>
         {menuOpen && (
           <div className="fixed inset-0 z-[58] bg-ink/40 lg:hidden fade-in" onClick={() => setMenuOpen(false)}>
             <aside className="relative h-full w-72 bg-brand pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] slide-in" onClick={e => e.stopPropagation()}>
@@ -217,7 +217,7 @@ function ThemeSwitch() {
     <div className="mb-1 ml-3 inline-flex overflow-hidden rounded-full border border-cream/15" role="radiogroup" aria-label="Tema" data-testid="theme-switch">
       {opts.map(({ v, label, Icon }) => (
         <button key={v} role="radio" aria-checked={pref === v} title={label} aria-label={`Tema ${label.toLowerCase()}`} onClick={() => setPref(v)}
-          className={`flex h-7 w-9 items-center justify-center transition-colors ${pref === v ? 'bg-cream/15 text-cream' : 'text-cream/45 hover:text-cream'}`}>
+          className={`flex h-7 w-9 items-center justify-center transition-colors ${pref === v ? 'bg-brand-accent text-cream' : 'text-cream/45 hover:text-cream'}`}>
           <Icon size={13} strokeWidth={1.6} />
         </button>
       ))}
