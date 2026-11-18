@@ -118,6 +118,7 @@ await step('compromissos na grade da semana (dono vê título, a outra vê “Oc
 })
 
 await step('arrastar pendência para um horário da grade', async () => {
+  await v.page.setViewportSize({ width: 1440, height: 1800 }) // grade inteira visível (a pessoa rolaria durante o arraste)
   const chip = v.page.getByTestId('grid-task').filter({ hasText: T })
   await chip.waitFor({ timeout: 10000 })
   const col = v.page.getByTestId(`grid-day-${today}`)
