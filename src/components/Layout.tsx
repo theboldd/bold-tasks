@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Bell, CalendarDays, Clock3, Home, Inbox, ListTodo, LogOut, Plus, Search, Settings, User, Users, Building2, Menu, X, History } from 'lucide-react'
+import { Bell, CalendarDays, Monitor, Moon, Sun, Clock3, Home, Inbox, ListTodo, LogOut, Plus, Search, Settings, User, Users, Building2, Menu, X, History } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useWs } from '../lib/store'
 import { UIContext } from '../lib/ui'
@@ -8,6 +8,7 @@ import { firstName, isOpen, timeAgo } from '../lib/labels'
 import { TaskFormModal, type NewTaskDefaults } from './TaskFormModal'
 import { TaskDrawer } from './TaskDrawer'
 import { Avatar, memberColorIndex } from './ui'
+import { useTheme, type ThemePref } from '../lib/theme'
 
 export function Layout({ children }: { children: ReactNode }) {
   const { me, other, tasks, members, workspace, workspaces, switchWorkspace, isMine } = useWs()
@@ -46,7 +47,7 @@ export function Layout({ children }: { children: ReactNode }) {
       all: open.length,
       mine: open.filter(t => isMine(t, me.id)).length,
       other: other ? open.filter(t => isMine(t, other.user_id)).length : 0,
-      bold: open.filter(t => t.category === 'the_bold').length,
+      bold: open.filter(t => t.is_team).length,
       waiting: open.filter(t => t.status === 'aguardando').length,
       triage: open.filter(t => t.needs_triage).length,
     }
@@ -58,7 +59,7 @@ export function Layout({ children }: { children: ReactNode }) {
     { to: '/pendencias', label: 'Todas as pendências', icon: ListTodo, count: counts.all },
     { to: '/minhas', label: 'Minhas pendências', icon: User, count: counts.mine },
     { to: '/outra', label: otherLabel, icon: Users, count: counts.other },
-    { to: '/the-bold', label: 'The Bold', icon: Building2, count: counts.bold },
+    { to: '/the-bold', label: 'Equipe The Bold', icon: Building2, count: counts.bold },
     { to: '/aguardando', label: 'Aguardando', icon: Clock3, count: counts.waiting },
     { to: '/a-classificar', label: 'A classificar', icon: Inbox, count: counts.triage, hideIfZero: true },
     { to: '/calendario', label: 'Calendário', icon: CalendarDays },
@@ -68,36 +69,37 @@ export function Layout({ children }: { children: ReactNode }) {
   const sidebar = (
     <nav className="flex h-full flex-col" aria-label="Menu principal">
       <div className="px-7 pt-8 pb-7">
-        <div className="display text-[2.35rem] font-semibold leading-none tracking-tight text-off">BOLD</div>
-        <div className="meta mt-1.5 text-[10px] font-semibold uppercase tracking-[.42em] text-off/60">Tasks</div>
-        <div className="mt-5 h-px w-10 bg-off/30" />
-        <p className="mt-4 max-w-[12rem] text-[12px] leading-relaxed text-off/50">Central de execução da The Bold.</p>
+        <div className="display text-[2.35rem] font-semibold leading-none tracking-tight text-cream">BOLD</div>
+        <div className="meta mt-1.5 text-[10px] font-semibold uppercase tracking-[.42em] text-cream/60">Tasks</div>
+        <div className="mt-5 h-px w-10 bg-cream/30" />
+        <p className="mt-4 max-w-[12rem] text-[12px] leading-relaxed text-cream/50">Central de execução da The Bold.</p>
       </div>
       <ul className="flex-1 overflow-y-auto px-4">
         {nav.filter(n => !(n.hideIfZero && !n.count)).map((n, i) => (
           <li key={n.to}>
-            <NavLink to={n.to} end={n.end} className={({ isActive }) => `group relative flex items-center gap-3 py-2.5 pl-4 pr-2 text-[13.5px] transition-colors ${isActive ? 'text-off' : 'text-off/55 hover:text-off'}`}>
+            <NavLink to={n.to} end={n.end} className={({ isActive }) => `group relative flex items-center gap-3 py-2.5 pl-4 pr-2 text-[13.5px] transition-colors ${isActive ? 'text-cream' : 'text-cream/55 hover:text-cream'}`}>
               {({ isActive }) => <>
-                <span className={`absolute left-0 top-1/2 h-4 w-px -translate-y-1/2 transition-all ${isActive ? 'bg-off' : 'bg-transparent group-hover:bg-off/30'}`} />
-                <span className="meta w-5 text-[10px] tracking-wider text-off/35">{String(i + 1).padStart(2, '0')}</span>
+                <span className={`absolute left-0 top-1/2 h-4 w-px -translate-y-1/2 transition-all ${isActive ? 'bg-cream' : 'bg-transparent group-hover:bg-cream/30'}`} />
+                <span className="meta w-5 text-[10px] tracking-wider text-cream/35">{String(i + 1).padStart(2, '0')}</span>
                 <span className="flex-1 truncate">{n.label}</span>
-                {!!n.count && <span className={`meta text-[11px] tabular-nums ${n.to === '/a-classificar' ? 'text-[#e8cfa8] font-semibold' : 'text-off/45'}`}>{n.count}</span>}
+                {!!n.count && <span className={`meta text-[11px] tabular-nums ${n.to === '/a-classificar' ? 'text-[#e8cfa8] font-semibold' : 'text-cream/45'}`}>{n.count}</span>}
               </>}
             </NavLink>
           </li>
         ))}
       </ul>
-      <div className="mx-4 border-t border-off/15 py-3">
+      <div className="mx-4 border-t border-cream/15 py-3">
         {workspaces.length > 1 && (
-          <select aria-label="Workspace" className="mb-2 w-full border border-off/15 bg-transparent px-3 py-2 text-[13px] text-off/80" value={workspace.id} onChange={e => { switchWorkspace(e.target.value); navigate('/') }}>
+          <select aria-label="Workspace" className="mb-2 w-full border border-cream/15 bg-transparent px-3 py-2 text-[13px] text-cream/80" value={workspace.id} onChange={e => { switchWorkspace(e.target.value); navigate('/') }}>
             {workspaces.map(w => <option key={w.id} value={w.id} className="text-ink">{w.name}</option>)}
           </select>
         )}
-        <NavLink to="/configuracoes" className={({ isActive }) => `flex items-center gap-3 py-2 pl-4 text-[13px] ${isActive ? 'text-off' : 'text-off/55 hover:text-off'}`}><Settings size={15} strokeWidth={1.5} />Configurações</NavLink>
+        <ThemeSwitch />
+        <NavLink to="/configuracoes" className={({ isActive }) => `flex items-center gap-3 py-2 pl-4 text-[13px] ${isActive ? 'text-cream' : 'text-cream/55 hover:text-cream'}`}><Settings size={15} strokeWidth={1.5} />Configurações</NavLink>
         <div className="mt-1 flex items-center gap-3 py-2 pl-3">
           <Avatar name={me.name} idx={memberColorIndex(members, me.id) === 0 ? 1 : 0} size={30} />
-          <div className="min-w-0 flex-1"><div className="truncate text-[13px] text-off">{me.name}</div><div className="meta truncate text-[10px] uppercase tracking-[.16em] text-off/40">{workspace.name}</div></div>
-          <button aria-label="Sair" title="Sair" className="p-1 text-off/50 hover:text-off" onClick={() => supabase.auth.signOut()}><LogOut size={16} strokeWidth={1.5} /></button>
+          <div className="min-w-0 flex-1"><div className="truncate text-[13px] text-cream">{me.name}</div><div className="meta truncate text-[10px] uppercase tracking-[.16em] text-cream/40">{workspace.name}</div></div>
+          <button aria-label="Sair" title="Sair" className="p-1 text-cream/50 hover:text-cream" onClick={() => supabase.auth.signOut()}><LogOut size={16} strokeWidth={1.5} /></button>
         </div>
       </div>
     </nav>
@@ -106,11 +108,11 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <UIContext.Provider value={{ openTask, openNew }}>
       <div className="flex min-h-full">
-        <aside className="fixed inset-y-0 left-0 hidden w-[248px] bg-bordo lg:block">{sidebar}</aside>
+        <aside className="fixed inset-y-0 left-0 hidden w-[248px] bg-brand lg:block">{sidebar}</aside>
         {menuOpen && (
           <div className="fixed inset-0 z-[58] bg-ink/40 lg:hidden fade-in" onClick={() => setMenuOpen(false)}>
-            <aside className="relative h-full w-72 bg-bordo slide-in" onClick={e => e.stopPropagation()}>
-              <button className="absolute right-4 top-6 text-off/70" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X /></button>
+            <aside className="relative h-full w-72 bg-brand slide-in" onClick={e => e.stopPropagation()}>
+              <button className="absolute right-4 top-6 text-cream/70" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X /></button>
               {sidebar}
             </aside>
           </div>
@@ -200,6 +202,21 @@ function NotificationBell() {
           </ul>
         </div>
       )}
+    </div>
+  )
+}
+
+function ThemeSwitch() {
+  const [pref, setPref] = useTheme()
+  const opts: { v: ThemePref; label: string; Icon: typeof Sun }[] = [{ v: 'system', label: 'Sistema', Icon: Monitor }, { v: 'light', label: 'Claro', Icon: Sun }, { v: 'dark', label: 'Escuro', Icon: Moon }]
+  return (
+    <div className="mb-2 ml-4 inline-flex border border-cream/15" role="radiogroup" aria-label="Tema" data-testid="theme-switch">
+      {opts.map(({ v, label, Icon }) => (
+        <button key={v} role="radio" aria-checked={pref === v} title={label} aria-label={`Tema ${label.toLowerCase()}`} onClick={() => setPref(v)}
+          className={`flex h-7 w-8 items-center justify-center transition-colors ${pref === v ? 'bg-cream/15 text-cream' : 'text-cream/45 hover:text-cream'}`}>
+          <Icon size={13} strokeWidth={1.6} />
+        </button>
+      ))}
     </div>
   )
 }

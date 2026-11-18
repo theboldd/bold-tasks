@@ -16,6 +16,9 @@
   --color-late-50: #F7E9E5;
   --color-wait: #7D6230;
   --color-wait-50: #F3EDE1;
+  /* fixas: barra lateral e painel da marca */
+  --color-brand: #3A0000;
+  --color-cream: #F5F2ED;
 
   --font-serif: "Cormorant Garamond", "Garamond", Georgia, serif;
   --font-accent: "Cormorant Garamond", Georgia, serif;
@@ -29,6 +32,28 @@
   --radius-2xl: 8px;
   --radius-3xl: 10px;
 }
+
+/* modo escuro: mesmas variáveis, valores invertidos */
+:root { color-scheme: light; }
+:root.dark {
+  color-scheme: dark;
+  --color-bordo: #D69AA3;
+  --color-bordo-600: #E7B6BD;
+  --color-bordo-50: #2D1D20;
+  --color-off: #141212;
+  --color-paper: #1D1A19;
+  --color-ink: #F2EEE8;
+  --color-mute: #9C9390;
+  --color-line: #322D2B;
+  --color-ok: #8DB487;
+  --color-ok-50: #1C2A1B;
+  --color-late: #EC8A7B;
+  --color-late-50: #35201C;
+  --color-wait: #D7B77A;
+  --color-wait-50: #2F281A;
+  --color-brand: #26080D;
+}
+:root.dark ::selection { background: #D69AA333; }
 
 @layer base {
   html, body, #root { height: 100%; }
@@ -58,10 +83,10 @@
   .rule-ink { border-top: 1px solid var(--color-ink); }
 
   .field {
-    width: 100%; border: 1px solid var(--color-line); background: #fff; border-radius: 2px;
+    width: 100%; border: 1px solid var(--color-line); background: var(--color-paper); border-radius: 2px;
     padding: .55rem .75rem; outline: none; transition: border-color .15s, box-shadow .15s;
   }
-  .field:hover { border-color: #d6cdc9; }
+  .field:hover { border-color: var(--color-mute); }
   .field:focus { border-color: var(--color-bordo); box-shadow: 0 0 0 3px #3A000012; }
   /* filtros minimalistas: só a linha de base */
   .field-line { border: 0; border-bottom: 1px solid var(--color-line); background: transparent; border-radius: 0; padding: .4rem .1rem; outline: none; transition: border-color .15s; }
@@ -73,18 +98,18 @@
   .btn-primary { background: var(--color-bordo); color: var(--color-off); }
   .btn-primary:hover:not(:disabled) { background: var(--color-bordo-600); }
   .btn-ghost { border: 1px solid var(--color-line); background: transparent; }
-  .btn-ghost:hover:not(:disabled) { border-color: var(--color-ink); background: #fff; }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--color-ink); background: var(--color-paper); }
   .btn-text { padding: .35rem .5rem; color: var(--color-mute); }
   .btn-text:hover { color: var(--color-ink); }
   .link-edit { background-image: linear-gradient(currentColor, currentColor); background-size: 0 1px; background-position: 0 100%; background-repeat: no-repeat; transition: background-size .25s ease; }
   .link-edit:hover { background-size: 100% 1px; }
 
-  .card { background: #fff; border: 1px solid var(--color-line); border-radius: 2px; }
+  .card { background: var(--color-paper); border: 1px solid var(--color-line); border-radius: 2px; }
   .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
-  .scrollbar-thin::-webkit-scrollbar-thumb { background: #ddd5d1; border-radius: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 6px; }
 
   /* skeleton */
-  .skel { background: linear-gradient(90deg, #ece7e3 0%, #f6f3f0 40%, #ece7e3 80%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: 2px; }
+  .skel { background: linear-gradient(90deg, var(--color-line) 0%, var(--color-paper) 40%, var(--color-line) 80%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: 2px; }
 }
 
 .fade-in { animation: fadeIn .2s ease-out; }
@@ -94,6 +119,8 @@
 @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 @keyframes riseIn { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
 @keyframes slideIn { from { transform: translateX(28px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes doneRing { from { transform: scale(1); opacity: .9 } to { transform: scale(2.2); opacity: 0 } }
+.done-ring { animation: doneRing .6s ease-out forwards; }
 @keyframes donePop { 0% { transform: scale(.6) } 60% { transform: scale(1.18) } 100% { transform: scale(1) } }
 @keyframes shimmer { from { background-position: 200% 0 } to { background-position: -200% 0 } }
-@media (prefers-reduced-motion: reduce) { .fade-in, .rise-in, .slide-in, .done-pop, .skel { animation: none !important } }
+@media (prefers-reduced-motion: reduce) { .fade-in, .rise-in, .slide-in, .done-pop, .done-ring, .skel { animation: none !important } }

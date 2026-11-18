@@ -23,7 +23,7 @@ export function TasksPage({ variant }: { variant: Variant }) {
   const scoped = useMemo(() => tasks.filter(t => {
     if (variant === 'mine') return isMine(t, me.id)
     if (variant === 'other') return !!other && isMine(t, other.user_id)
-    if (variant === 'thebold') return t.category === 'the_bold'
+    if (variant === 'thebold') return t.is_team
     if (variant === 'waiting') return t.status === 'aguardando'
     if (variant === 'triage') return t.needs_triage && t.status !== 'concluida'
     return true
@@ -45,18 +45,18 @@ export function TasksPage({ variant }: { variant: Variant }) {
     all: { eyebrow: 'Central de tarefas', title: 'Todas as', accent: 'pendências' },
     mine: { eyebrow: firstName(me.name), title: 'Minhas', accent: 'pendências' },
     other: { eyebrow: 'Alinhamento e visibilidade', title: 'Pendências da', accent: otherName },
-    thebold: { eyebrow: 'Demandas institucionais', title: 'The', accent: 'Bold' },
+    thebold: { eyebrow: 'Pendências da equipe', title: 'Equipe', accent: 'The Bold' },
     waiting: { eyebrow: 'Dependem de retorno', title: 'Aguardando', accent: 'terceiros' },
     triage: { eyebrow: 'Capturas rápidas', title: 'A', accent: 'classificar' },
   }[variant]
 
-  const newDefaults = variant === 'mine' ? { assigned_to: me.id } : variant === 'other' && other ? { assigned_to: other.user_id } : variant === 'waiting' ? { status: 'aguardando' as const } : variant === 'triage' ? { mode: 'quick' as const } : undefined
+  const newDefaults = variant === 'mine' ? { assigned_to: me.id } : variant === 'other' && other ? { assigned_to: other.user_id } : variant === 'thebold' ? { team: true } : variant === 'waiting' ? { status: 'aguardando' as const } : variant === 'triage' ? { mode: 'quick' as const } : undefined
 
   if (!tasksLoaded) return <Spinner />
 
   return (
     <div>
-      <PageHeader {...header} lede={variant === 'other' ? 'Para acompanhar e alinhar — não para cobrar. Use os comentários de cada pendência para conversar.' : undefined}>
+      <PageHeader {...header} lede={variant === 'other' ? 'Para acompanhar e alinhar, não para cobrar. Use os comentários de cada pendência para conversar.' : undefined}>
         <div className="inline-flex border-b border-line" role="group" aria-label="Visualização">
           {grouped && <ViewBtn active={view === 'groups'} onClick={() => setView('groups')} label="Agrupado"><Rows3 size={15} /></ViewBtn>}
           <ViewBtn active={view === 'list'} onClick={() => setView('list')} label="Lista"><List size={15} /></ViewBtn>
@@ -85,7 +85,7 @@ export function TasksPage({ variant }: { variant: Variant }) {
       {showFilters && (
         <div className="mb-6 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-line py-5 fade-in md:grid-cols-4 lg:grid-cols-7" data-testid="filters">
           <Sel label="Responsável" value={f.assigned} onChange={v => setF({ assigned: v })} disabled={grouped}
-            opts={[{ value: '', label: 'Todas' }, ...members.map(m => ({ value: m.user_id, label: m.profile.name })), { value: 'shared', label: 'Das duas' }, { value: 'none', label: 'Sem responsável' }]} />
+            opts={[{ value: '', label: 'Todas' }, ...members.map(m => ({ value: m.user_id, label: m.profile.name })), { value: 'shared', label: 'Das duas' }, { value: 'team', label: 'Equipe The Bold' }, { value: 'none', label: 'Sem responsável' }]} />
           <Sel label="Criado por" value={f.createdBy} onChange={v => setF({ createdBy: v })}
             opts={[{ value: '', label: 'Todas' }, ...members.map(m => ({ value: m.user_id, label: m.profile.name }))]} />
           <Sel label="Categoria" value={f.category} onChange={v => setF({ category: v })} opts={[{ value: '', label: 'Todas' }, ...categoryOptions(members)]} />
@@ -149,5 +149,5 @@ function Sel({ label, value, onChange, opts, disabled }: { label: string; value:
   )
 }
 function Chk({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]"><input type="checkbox" className="accent-[#3A0000] h-3.5 w-3.5" checked={checked} onChange={e => onChange(e.target.checked)} />{label}</label>
+  return <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]"><input type="checkbox" className="accent-bordo h-3.5 w-3.5" checked={checked} onChange={e => onChange(e.target.checked)} />{label}</label>
 }

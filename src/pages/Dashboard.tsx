@@ -1,15 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Plus, Zap } from 'lucide-react'
 import { useWs } from '../lib/store'
 import { useUI } from '../lib/ui'
-import { supabase } from '../lib/supabase'
-import { PRIORITY_RANK, addDaysISO, dayLabel, firstName, isDueToday, isForToday, isOpen, isOverdue, isTimePassed, timeAgo, todayISO, weekStartISO } from '../lib/labels'
+import { PRIORITY_RANK, addDaysISO, dayLabel, firstName, isDueToday, isForToday, isOpen, isOverdue, isTimePassed, todayISO, weekStartISO } from '../lib/labels'
 import { dayCmp } from '../lib/filters'
-import { describeActivity } from '../lib/activity'
-import type { Activity, Task } from '../lib/types'
+import type { Task } from '../lib/types'
 import { MiniTask } from '../components/TaskViews'
-import { Avatar, SectionTitle, Spinner, memberColorIndex } from '../components/ui'
+import { SectionTitle, Spinner } from '../components/ui'
 
 function attentionSort(a: Task, b: Task) {
   const today = todayISO()
@@ -18,19 +16,9 @@ function attentionSort(a: Task, b: Task) {
 }
 
 export function Dashboard() {
-  const { me, other, members, tasks, tasksLoaded, workspace, isMine, partsOf } = useWs()
+  const { me, other, members, tasks, tasksLoaded, isMine, partsOf } = useWs()
   const { openNew } = useUI()
-  const [activity, setActivity] = useState<Activity[]>([])
   const today = todayISO()
-
-  useEffect(() => {
-    supabase.from('task_activity').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }).limit(10)
-      .then(({ data }) => setActivity((data ?? []) as Activity[]))
-    const ch = supabase.channel(`dash-act-${workspace.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_activity', filter: `workspace_id=eq.${workspace.id}` }, p => setActivity(prev => [p.new as Activity, ...prev].slice(0, 10)))
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [workspace.id])
 
   const s = useMemo(() => {
     const open = tasks.filter(isOpen)
@@ -84,7 +72,7 @@ export function Dashboard() {
                   {rolled > 0 && <>, {rolled} {rolled === 1 ? 'veio' : 'vieram'} de dias anteriores</>}
                   {passed > 0 && <>, <span className="text-late">{passed} já {passed === 1 ? 'passou' : 'passaram'} do horário</span></>}.
                   {' '}O que não for concluído hoje passa para amanhã automaticamente.</>
-              : <>Seu dia está livre. {s.myOpen.length ? `Você tem ${s.myOpen.length} ${s.myOpen.length === 1 ? 'pendência aberta' : 'pendências abertas'} em outros dias — bom momento para adiantar.` : 'Nenhuma pendência sua em aberto.'}</>}
+              : <>Seu dia está livre. {s.myOpen.length ? `Você tem ${s.myOpen.length} ${s.myOpen.length === 1 ? 'pendência aberta' : 'pendências abertas'} em outros dias. Bom momento para adiantar.` : 'Nenhuma pendência sua em aberto.'}</>}
           </p>
           {(s.myOverdue.length > 0 || s.triage.length > 0) && (
             <div className="mt-6 flex flex-col items-start gap-2 text-[14px]">
@@ -98,23 +86,22 @@ export function Dashboard() {
           <button className="btn btn-primary w-full py-3" onClick={() => openNew()}><Plus size={15} strokeWidth={1.8} />Nova pendência</button>
           <button className="btn btn-ghost w-full py-3" onClick={() => openNew({ mode: 'quick' })}><Zap size={14} strokeWidth={1.6} />Captura rápida</button>
           {other && <button className="btn btn-text w-full" onClick={() => openNew({ assigned_to: other.user_id })}>Atribuir para {otherName} →</button>}
-          <p className="meta mt-2 hidden text-[10.5px] uppercase tracking-[.14em] text-mute lg:block">Atalhos · N nova · Q captura · / busca</p>
         </aside>
       </section>
 
       {/* ===== Indicadores ===== */}
-      <section aria-label="Indicadores" className="grid grid-cols-2 border-y border-line md:grid-cols-4">
-        <Kpi to="/minhas" label="Minhas abertas" value={s.myOpen.length} testid="kpi-Abertas" />
-        <Kpi to="/minhas?overdue=1" label="Atrasadas" value={s.myOverdue.length} tone={s.myOverdue.length ? 'late' : ''} testid="kpi-Atrasadas" />
-        <Kpi to="/minhas?status=concluida&sort=created" label="Concluídas na semana" value={s.myDoneWeek} tone="ok" testid="kpi-Concluídas na semana" />
-        <div className="col-span-2 border-t border-line px-1 py-5 md:col-span-1 md:border-t-0 md:border-l md:px-6" data-testid="kpi-responsavel">
+      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <Kpi to="/minhas" label="Minhas pendências" value={s.myOpen.length} tone="brand" hint={s.myToday.length ? `${s.myToday.length} para hoje` : 'nada para hoje'} testid="kpi-Abertas" />
+        <Kpi to="/minhas?overdue=1" label="Atrasadas" value={s.myOverdue.length} tone={s.myOverdue.length ? 'late' : 'calm'} hint={s.myOverdue.length ? 'prazo final vencido' : 'tudo em dia'} testid="kpi-Atrasadas" />
+        <Kpi to="/minhas?status=concluida&sort=created" label="Concluídas na semana" value={s.myDoneWeek} tone="ok" hint="desde segunda" testid="kpi-Concluídas na semana" />
+        <div className="col-span-2 rounded-sm border border-line bg-paper px-5 py-5 md:col-span-1" data-testid="kpi-responsavel">
           <div className="eyebrow mb-3">Por responsável</div>
           <ul className="space-y-2.5">
             {s.perMember.map(({ m, n }) => (
               <li key={m.user_id}>
                 <Link to={m.user_id === me.id ? '/minhas' : '/outra'} className="group flex items-center gap-3">
                   <span className="w-16 truncate text-[13px] group-hover:text-bordo">{firstName(m.profile.name)}</span>
-                  <span className="relative h-px flex-1 bg-line"><span className="absolute inset-y-[-1px] left-0 bg-bordo transition-all" style={{ width: `${(n / maxMember) * 100}%` }} /></span>
+                  <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-line"><span className="absolute inset-y-0 left-0 rounded-full bg-bordo transition-all duration-500" style={{ width: `${(n / maxMember) * 100}%` }} /></span>
                   <span className="num w-6 text-right text-[15px] font-medium">{n}</span>
                 </Link>
               </li>
@@ -155,21 +142,25 @@ export function Dashboard() {
           ) : <Quiet>Sem prazos finais nos próximos 7 dias.</Quiet>}
         </section>
 
-        <section className="min-w-0 lg:col-span-12" aria-label="Atividades recentes">
-          <SectionTitle n="06" title="Atividades recentes" to="/historico" />
-          {activity.length ? <ActivityLog items={activity} /> : <Quiet>Ainda não há atividade.</Quiet>}
-        </section>
       </div>
     </div>
   )
 }
 
-function Kpi({ label, value, to, tone, testid }: { label: string; value: number; to: string; tone?: string; testid: string }) {
+const KPI_TONE: Record<string, { box: string; num: string; label: string }> = {
+  brand: { box: 'bg-bordo text-off border-bordo', num: 'text-off', label: 'text-off/70' },
+  late: { box: 'bg-late-50 border-late/40 border-l-4 border-l-late', num: 'text-late', label: 'text-late/80' },
+  ok: { box: 'bg-ok-50 border-ok/30', num: 'text-ok', label: 'text-ok/80' },
+  calm: { box: 'bg-paper border-line', num: 'text-ink', label: 'text-mute' },
+}
+function Kpi({ label, value, to, tone = 'calm', hint, testid }: { label: string; value: number; to: string; tone?: string; hint?: string; testid: string }) {
+  const t = KPI_TONE[tone] ?? KPI_TONE.calm
   return (
-    <Link to={to} data-testid={testid} className="group border-line px-1 py-5 transition-colors hover:bg-paper/60 md:px-6 [&:not(:first-child)]:border-l">
-      <div className="eyebrow mb-2">{label}</div>
-      <div className={`num text-[2.9rem] font-light leading-none md:text-[3.4rem] ${tone === 'late' ? 'text-late' : tone === 'ok' ? 'text-ok' : 'text-ink'}`}>{value}</div>
-      <div className="mt-2 h-px w-0 bg-current opacity-40 transition-all duration-300 group-hover:w-8" />
+    <Link to={to} data-testid={testid} className={`group relative overflow-hidden rounded-sm border px-5 py-5 shadow-[0_10px_30px_-22px_rgba(21,19,19,.45)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-20px_rgba(21,19,19,.5)] ${t.box}`}>
+      <div className={`eyebrow mb-2 ${t.label}`}>{label}</div>
+      <div className={`num text-[2.9rem] font-light leading-none md:text-[3.4rem] ${t.num}`}>{value}</div>
+      {hint && <div className={`meta mt-2 text-[11px] ${t.label}`}>{hint}</div>}
+      <ArrowRight size={15} className={`absolute right-4 top-4 opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-70 ${t.num}`} />
     </Link>
   )
 }
@@ -195,29 +186,6 @@ function DeadlineRow({ task }: { task: Task }) {
   )
 }
 
-function ActivityLog({ items }: { items: Activity[] }) {
-  const { tasks, memberName, members } = useWs()
-  const { openTask } = useUI()
-  return (
-    <ul className="grid grid-cols-1 gap-x-10 md:grid-cols-2 [&>li]:min-w-0">
-      {items.map(a => {
-        const t = tasks.find(x => x.id === a.task_id)
-        return (
-          <li key={a.id} className="flex items-start gap-3 border-b border-line py-3 text-[13.5px]">
-            <Avatar name={a.user_id ? memberName(a.user_id) : 'Sistema'} idx={memberColorIndex(members, a.user_id)} size={22} />
-            <div className="min-w-0 flex-1">
-              <span className="font-medium">{a.user_id ? firstName(memberName(a.user_id)) : 'Sistema'}</span> <span className="text-ink/70">{describeActivity(a, memberName)}</span>
-              {t ? <button className="link-edit block max-w-full truncate text-left text-mute hover:text-bordo" onClick={() => openTask(t.id)}>{t.title}</button> : <span className="block text-mute">(pendência excluída)</span>}
-            </div>
-            <span className="meta shrink-0 text-[10.5px] uppercase tracking-[.1em] text-mute">{timeAgo(a.created_at)}</span>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-/** 01 — Prioridades do dia: pendências separadas por dia para fazer (o que não é concluído vai sozinho para o dia seguinte). */
 function ByDay() {
   const { tasks, me, isMine } = useWs()
   const [scope, setScope] = useState<'mine' | 'all'>(() => (localStorage.getItem('bt_day_scope') as 'mine' | 'all') || 'mine')

@@ -6,15 +6,17 @@ import { PRIORITY, STATUS, todayISO } from '../lib/labels'
 import { TimeField, type TimeValue } from './TimeField'
 import { categoryOptions, decodeCategory } from '../lib/filters'
 import type { Priority, Status } from '../lib/types'
+import { AssigneePicker, assignHint } from './AssigneePicker'
+import { assignToPatch, assignValid, type Assign } from '../lib/assign'
 
-export interface NewTaskDefaults { assigned_to?: string; category?: string; status?: Status; due_date?: string; scheduled_date?: string; due_time?: string; mode?: 'full' | 'quick' }
+export interface NewTaskDefaults { assigned_to?: string; team?: boolean; category?: string; status?: Status; due_date?: string; scheduled_date?: string; due_time?: string; mode?: 'full' | 'quick' }
 
 export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: boolean; onClose: () => void; defaults?: NewTaskDefaults; onCreated?: (id: string) => void }) {
   const { members, createTask, quickCapture } = useWs()
   const toast = useToast()
   const [mode, setMode] = useState<'full' | 'quick'>('full')
   const [title, setTitle] = useState('')
-  const [assigned, setAssigned] = useState('')
+  const [assigned, setAssigned] = useState<Assign>({ people: [], team: false })
   const [category, setCategory] = useState('the_bold')
   const [due, setDue] = useState('')
   const [day, setDay] = useState(todayISO())
@@ -31,7 +33,7 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
     if (!open) return
     setMode(defaults?.mode ?? 'full')
     setTitle(''); setDescription(''); setQuick(''); setTried(false)
-    setAssigned(defaults?.assigned_to ?? '')
+    setAssigned({ people: defaults?.assigned_to === 'both' ? members.map(m => m.user_id) : defaults?.assigned_to ? [defaults.assigned_to] : [], team: !!defaults?.team })
     setCategory(defaults?.category ?? 'the_bold')
     setDue(defaults?.due_date ?? '')
     setDay(defaults?.scheduled_date ?? todayISO())
@@ -46,11 +48,10 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
   async function submitFull(e: React.FormEvent) {
     e.preventDefault()
     setTried(true)
-    if (!title.trim() || !assigned || !category) return
+    if (!title.trim() || !assignValid(assigned) || !category) return
     setSaving(true)
-    const both = assigned === 'both'
     const t = await createTask({
-      title: title.trim(), assigned_to: both ? null : assigned, is_shared: both, ...decodeCategory(category),
+      title: title.trim(), ...assignToPatch(assigned), ...decodeCategory(category),
       due_date: due || null, scheduled_date: day || todayISO(), ...time,
       priority, status, description: description.trim() || null,
     })
@@ -92,17 +93,10 @@ export function TaskFormModal({ open, onClose, defaults, onCreated }: { open: bo
             <input id="nt-title" ref={el => { firstRef.current = el }} className={`w-full border-0 border-b bg-transparent pb-2 font-serif text-[1.7rem] leading-tight outline-none placeholder:text-mute/50 focus:border-bordo ${tried && !title.trim() ? 'border-late' : 'border-ink'}`} value={title} onChange={e => setTitle(e.target.value)} placeholder="O que precisa ser feito?" maxLength={300} />
           </div>
           <div>
-            <span className="eyebrow mb-1.5 block">Responsável *</span>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Responsável">
-              {[...members.map(m => ({ id: m.user_id, label: m.profile.name })), ...(members.length > 1 ? [{ id: 'both', label: 'Ambas' }] : [])].map(o => (
-                <button type="button" role="radio" aria-checked={assigned === o.id} key={o.id} onClick={() => setAssigned(o.id)}
-                  className={`border px-4 py-2 text-[13px] transition ${assigned === o.id ? 'border-bordo bg-bordo text-off' : `border-line bg-transparent hover:border-ink ${tried && !assigned ? 'border-late' : ''}`}`}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
-            {tried && !assigned && <p className="mt-1 text-xs text-late">Selecione quem vai executar.</p>}
-            {assigned === 'both' && <p className="mt-1 text-xs text-mute">Cada uma conclui a sua parte. Quando uma termina, a outra é avisada; quando as duas terminam, a pendência fecha.</p>}
+            <span className="eyebrow mb-1.5 block">Responsáveis * <span className="normal-case tracking-normal text-mute/80">(pode marcar mais de um)</span></span>
+            <AssigneePicker value={assigned} onChange={setAssigned} members={members} invalid={tried && !assignValid(assigned)} />
+            {tried && !assignValid(assigned) && <p className="mt-1 text-xs text-late">Selecione quem vai executar.</p>}
+            {assignHint(assigned, members.length) && <p className="mt-1 text-xs text-mute">{assignHint(assigned, members.length)}</p>}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

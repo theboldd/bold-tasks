@@ -62,7 +62,7 @@ export function CalendarPage() {
 
   const [y, m] = anchor.split('-').map(Number)
   const fmt = (iso: string) => `${Number(iso.slice(8))} ${MONTHS_FULL[Number(iso.slice(5, 7)) - 1].slice(0, 3).toLowerCase()}`
-  const title = mode === 'month' ? `${MONTHS_FULL[m - 1]} ${y}` : mode === 'week' ? `${fmt(days[0])} – ${fmt(days[6])}` : new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(anchor + 'T12:00:00Z'))
+  const title = mode === 'month' ? `${MONTHS_FULL[m - 1]} ${y}` : mode === 'week' ? `${fmt(days[0])} a ${fmt(days[6])}` : new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(anchor + 'T12:00:00Z'))
   const move = (dir: number) => {
     if (mode === 'day') return setAnchor(addDaysISO(anchor, dir))
     if (mode === 'week') return setAnchor(addDaysISO(anchor, 7 * dir))
@@ -107,7 +107,7 @@ export function CalendarPage() {
               <span className={`h-2.5 w-2.5 rounded-full ${DOT[i % DOT.length]}`} />{firstName(mb.profile.name)}
             </button>
           ))}
-          <label className="inline-flex items-center gap-1.5 text-mute"><input type="checkbox" className="accent-[#3A0000]" checked={showDone} onChange={e => setShowDone(e.target.checked)} />Concluídas</label>
+          <label className="inline-flex items-center gap-1.5 text-mute"><input type="checkbox" className="accent-bordo" checked={showDone} onChange={e => setShowDone(e.target.checked)} />Concluídas</label>
           {hasFeed && <button className="btn-text inline-flex items-center gap-1 text-xs" onClick={() => reload(true)} title="Atualizar Google Agenda"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} />Agenda</button>}
         </div>
       </div>
@@ -169,7 +169,7 @@ function EventDetails({ e, mine, ownerName }: { e: CalEvent; mine: boolean; owne
   const when = e.all_day
     ? (e.end.slice(0, 10) > addDaysISO(e.start.slice(0, 10), 1) ? `${dayFmt(s)} até ${dayFmt(lastAllDay)}` : dayFmt(s)) + ' · dia inteiro'
     : spDate(s) === spDate(en) || spMinutes(en) === 0
-      ? `${dayFmt(s)} · ${hhmm(spMinutes(s))}–${hhmm(spMinutes(en))}`
+      ? `${dayFmt(s)} · ${hhmm(spMinutes(s))} às ${hhmm(spMinutes(en))}`
       : `${dayFmt(s)}, ${hhmm(spMinutes(s))} até ${dayFmt(en)}, ${hhmm(spMinutes(en))}`
   const dur = e.all_day ? null : Math.round((en.getTime() - s.getTime()) / 60000)
   const [yy, mm, dd] = (e.all_day ? e.start.slice(0, 10) : spDate(s)).split('-')
@@ -245,8 +245,8 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
               const s = spDate(new Date(e.start)) === d ? spMinutes(new Date(e.start)) : 0
               const en = spDate(new Date(e.end)) === d ? spMinutes(new Date(e.end)) : 24 * 60
               return { key: `e${i}`, start: s, end: Math.max(en, s + 15), node: (
-                <button type="button" onClick={() => onEvent(e)} title={`${e.title} · ${hhmm(s)}–${hhmm(en)}`} data-testid="grid-event" className={`block h-full w-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:shadow-sm ${e.owner_id === me ? 'border-line bg-[#ece8e2] text-ink/80 hover:border-mute' : 'border-dashed border-[#d6cfc6] bg-off text-mute italic'}`}>
-                  <div className="font-medium truncate">{e.title}</div><div className="text-[10px] text-mute">{hhmm(s)}–{hhmm(en)}</div>
+                <button type="button" onClick={() => onEvent(e)} title={`${e.title} · ${hhmm(s)} às ${hhmm(en)}`} data-testid="grid-event" className={`block h-full w-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:shadow-sm ${e.owner_id === me ? 'border-line bg-line/60 text-ink/80 hover:border-mute' : 'border-dashed border-line bg-off text-mute italic'}`}>
+                  <div className="font-medium truncate">{e.title}</div><div className="text-[10px] text-mute">{hhmm(s)} às {hhmm(en)}</div>
                 </button>) }
             }),
             ...tasksOn(d).filter(t => effectiveTime(t)).map(t => {

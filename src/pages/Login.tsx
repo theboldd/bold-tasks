@@ -41,17 +41,17 @@ export function Login() {
 
   return (
     <div className="min-h-full grid lg:grid-cols-[1.1fr_1fr]">
-      <section className="relative hidden lg:flex flex-col justify-between bg-bordo p-14 text-off overflow-hidden">
+      <section className="relative hidden lg:flex flex-col justify-between bg-brand p-14 text-cream overflow-hidden">
         <div>
           <div className="display text-5xl font-semibold">BOLD</div>
-          <div className="meta mt-2 text-[11px] font-semibold uppercase tracking-[.45em] text-off/60">Tasks</div>
+          <div className="meta mt-2 text-[11px] font-semibold uppercase tracking-[.45em] text-cream/60">Tasks</div>
         </div>
         <div className="max-w-md">
-          <div className="mb-6 h-px w-12 bg-off/40" />
+          <div className="mb-6 h-px w-12 bg-cream/40" />
           <p className="display text-[3.6rem]">Conversas viram <em className="font-normal italic">responsabilidades</em> claras.</p>
-          <p className="mt-6 text-off/60 text-sm leading-relaxed">A central compartilhada de execução da The Bold. Cada pendência com um responsável, um prazo e um histórico.</p>
+          <p className="mt-6 text-cream/60 text-sm leading-relaxed">A central compartilhada de execução da The Bold. Cada pendência com um responsável, um prazo e um histórico.</p>
         </div>
-        <div className="eyebrow text-off/40">The Bold · Uso interno</div>
+        <div className="eyebrow text-cream/40">The Bold · Uso interno</div>
       </section>
       <section className="flex items-center justify-center p-6 md:p-12">
         <form onSubmit={submit} className="w-full max-w-sm" aria-label={mode === 'login' ? 'Entrar' : 'Primeiro acesso'}>

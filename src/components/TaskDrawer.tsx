@@ -1,3 +1,5 @@
+import { AssigneePicker } from './AssigneePicker'
+import { assignFromTask, assignToPatch, assignValid } from '../lib/assign'
 import { useEffect, useState } from 'react'
 import { Check, RotateCcw, Trash2, X, Send } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -123,7 +125,7 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
               ) : (
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span>Excluir esta pendência? Ela sai das listas, mas o histórico fica preservado.</span>
-                  <button className="btn bg-late text-white" onClick={async () => { if (await deleteTask(task.id)) { toast('Pendência excluída'); onClose() } }}>Confirmar exclusão</button>
+                  <button className="btn bg-late text-off" onClick={async () => { if (await deleteTask(task.id)) { toast('Pendência excluída'); onClose() } }}>Confirmar exclusão</button>
                   <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
                 </div>
               )}
@@ -160,6 +162,7 @@ function TaskBody({ task }: { task: Task }) {
         {late && <span className="meta border border-late/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[.14em] text-late">Atrasada</span>}
         {isTimePassed(task) && <span className="meta border border-late/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[.14em] text-late">Horário passou</span>}
         {task.is_shared && <span className="meta border border-bordo/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[.14em] text-bordo">Das duas</span>}
+        {task.is_team && <span className="meta bg-bordo px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[.14em] text-off">The Bold</span>}
         {task.rollover_count > 0 && !done && <span className="meta border border-wait/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[.1em] text-wait">↻ transferida {task.rollover_count}×</span>}
       </div>
       <textarea aria-label="Título" className={`display w-full resize-none bg-transparent text-[2.1rem] outline-none ${done ? 'text-mute line-through decoration-1' : ''}`}
@@ -206,7 +209,7 @@ function TaskBody({ task }: { task: Task }) {
               const p = parts.find(x => x.user_id === m.user_id)
               return (
                 <li key={m.user_id} className="flex items-center gap-2">
-                  <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${p?.completed_at ? 'bg-ok text-white' : 'border border-[#cfc7bd]'}`}>{p?.completed_at ? '✓' : ''}</span>
+                  <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${p?.completed_at ? 'bg-ok text-off' : 'border border-mute/50'}`}>{p?.completed_at ? '✓' : ''}</span>
                   <span>{m.profile.name}</span>
                   <span className="text-xs text-mute">{p?.completed_at ? `concluiu · ${formatDateTime(p.completed_at)}` : 'falta concluir'}</span>
                 </li>
@@ -218,13 +221,10 @@ function TaskBody({ task }: { task: Task }) {
 
       <dl className="mt-6 grid grid-cols-[120px_1fr] items-center gap-x-3 gap-y-3 border-t border-line pt-5 text-sm [&>dt]:meta [&>dt]:text-[11px] [&>dt]:uppercase [&>dt]:tracking-[.12em]">
         {!task.needs_triage && <>
-          <dt className="text-mute">Responsável</dt>
+          <dt className="text-mute">Responsáveis</dt>
           <dd>
-            <select aria-label="Responsável" className="field py-1.5" value={task.is_shared ? 'both' : task.assigned_to ?? ''}
-              onChange={e => e.target.value === 'both' ? save({ is_shared: true }) : save({ is_shared: false, assigned_to: e.target.value })}>
-              {members.map(m => <option key={m.user_id} value={m.user_id}>{m.profile.name}</option>)}
-              {members.length > 1 && <option value="both">Ambas</option>}
-            </select>
+            <AssigneePicker compact members={members} value={assignFromTask(task, members.map(m => m.user_id))}
+              onChange={a => assignValid(a) ? save(assignToPatch(a)) : toast('A pendência precisa de pelo menos um responsável', 'error')} />
           </dd>
           <dt className="text-mute">Categoria</dt>
           <dd>

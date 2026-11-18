@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { dayLabel, formatDue, initials, isOverdue, isTimePassed, statusLabel, priorityLabel, timeLabel } from '../lib/labels'
 import type { Member, Task } from '../lib/types'
 
-const AV_COLORS = ['bg-bordo text-off', 'bg-ink text-off', 'bg-mute text-white', 'bg-bordo-600 text-off']
+const AV_COLORS = ['bg-bordo text-off', 'bg-ink text-off', 'bg-mute text-off', 'bg-bordo-600 text-off']
 export function memberColorIndex(members: Member[], id: string | null) {
   const i = members.findIndex(m => m.user_id === id)
   return i < 0 ? 2 : i % AV_COLORS.length
@@ -112,7 +112,7 @@ export function SectionTitle({ n, title, to, right }: { n?: string; title: strin
 export function Empty({ title, text, action }: { title: string; text?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center border-y border-line px-6 py-16 text-center">
-      <div className="meta mb-3 text-[10px] uppercase tracking-[.3em] text-mute">— nada pendente —</div>
+      <div className="meta mb-3 text-[10px] uppercase tracking-[.3em] text-mute">nada pendente</div>
       <div className="display mb-2 text-3xl italic text-bordo">{title}</div>
       {text && <p className="max-w-sm text-sm text-mute">{text}</p>}
       {action && <div className="mt-5">{action}</div>}
@@ -161,7 +161,7 @@ export function SharedAvatars({ members, parts }: { members: Member[]; parts: { 
         const done = parts.find(p => p.user_id === m.user_id)?.completed_at
         return (
           <span key={m.user_id} className={`relative rounded-full ring-2 ring-paper ${done ? 'opacity-50' : ''}`}>
-            <Avatar name={m.profile.name} idx={i % 4} size={24} title={`${m.profile.name}${done ? ' — parte concluída' : ' — falta concluir'}`} />
+            <Avatar name={m.profile.name} idx={i % 4} size={24} title={`${m.profile.name}${done ? ': parte concluída' : ': falta concluir'}`} />
             {done && <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-ok text-[8px] text-white">✓</span>}
           </span>
         )

@@ -19,8 +19,8 @@ export const EMPTY_FILTERS: Filters = { q: '', assigned: '', createdBy: '', cate
 
 export function categoryOptions(members: Member[]) {
   return [
-    { value: 'the_bold', label: 'The Bold' },
-    ...members.map(m => ({ value: `pessoal:${m.user_id}`, label: `Pessoal — ${m.profile.name.split(' ')[0]}` })),
+    { value: 'the_bold', label: 'Trabalho' },
+    ...members.map(m => ({ value: `pessoal:${m.user_id}`, label: `Pessoal · ${m.profile.name.split(' ')[0]}` })),
   ]
 }
 export const encodeCategory = (t: Pick<Task, 'category' | 'category_owner'>) =>
@@ -31,8 +31,8 @@ export function decodeCategory(v: string): { category: Task['category']; categor
   return { category: null, category_owner: null }
 }
 export function categoryLabel(t: Pick<Task, 'category' | 'category_owner'>, memberName: (id: string | null) => string) {
-  if (t.category === 'the_bold') return 'The Bold'
-  if (t.category === 'pessoal') return `Pessoal — ${memberName(t.category_owner).split(' ')[0]}`
+  if (t.category === 'the_bold') return 'Trabalho'
+  if (t.category === 'pessoal') return `Pessoal · ${memberName(t.category_owner).split(' ')[0]}`
   return 'Sem categoria'
 }
 
@@ -43,8 +43,10 @@ export function applyFilters(tasks: Task[], f: Filters) {
   const q = norm(f.q.trim())
   let out = tasks.filter(t => {
     if (q && !norm(`${t.title} ${t.description ?? ''} #${t.seq}`).includes(q)) return false
-    if (f.assigned === 'none' ? t.assigned_to !== null : f.assigned && !(t.is_shared || t.assigned_to === f.assigned)) return false
-    if (f.assigned === 'shared' && !t.is_shared) return false
+    if (f.assigned === 'none') { if (t.assigned_to !== null || t.is_shared || t.is_team) return false }
+    else if (f.assigned === 'shared') { if (!t.is_shared) return false }
+    else if (f.assigned === 'team') { if (!t.is_team) return false }
+    else if (f.assigned && !(t.is_shared || t.assigned_to === f.assigned)) return false
     if (f.createdBy && t.created_by !== f.createdBy) return false
     if (f.category && encodeCategory(t) !== f.category) return false
     if (f.status === 'open' && t.status === 'concluida') return false

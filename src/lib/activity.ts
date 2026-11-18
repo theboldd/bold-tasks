@@ -6,8 +6,8 @@ const first = (s: string) => s.split(' ')[0]
 
 function catLabel(v: string | null, name: NameFn) {
   if (!v) return 'sem categoria'
-  if (v.startsWith('the_bold')) return 'The Bold'
-  if (v.startsWith('pessoal:')) return `Pessoal — ${first(name(v.slice(8)))}`
+  if (v.startsWith('the_bold')) return 'Trabalho'
+  if (v.startsWith('pessoal:')) return `Pessoal · ${first(name(v.slice(8)))}`
   return v
 }
 
@@ -39,6 +39,7 @@ export function describeActivity(a: Activity, name: NameFn): string {
         case 'scheduled_date': return `mudou o dia para fazer para ${dayLabel(a.new_value).toLowerCase()}`
         case 'due_time': return a.new_value ? `definiu o horário: ${a.new_value}` : 'removeu o horário'
         case 'shared': return a.new_value === 'true' ? 'tornou a pendência das duas' : 'deixou de ser pendência das duas'
+        case 'team': return a.new_value === 'true' ? 'atribuiu a pendência à equipe The Bold' : 'tirou a pendência da equipe The Bold'
       }
       return 'editou a pendência'
   }

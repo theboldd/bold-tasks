@@ -34,7 +34,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[80] flex flex-col gap-2 items-center pointer-events-none">
         {toasts.map(t => (
-          <div key={t.id} role="status" className={`rise-in pointer-events-auto rounded-sm px-4 py-2.5 text-[13px] shadow-[0_14px_40px_-18px_rgba(21,19,19,.6)] ${t.kind === "error" ? "bg-late text-white" : "bg-ink text-off"}`}>{t.text}</div>
+          <div key={t.id} role="status" className={`rise-in pointer-events-auto rounded-sm px-4 py-2.5 text-[13px] shadow-[0_14px_40px_-18px_rgba(21,19,19,.6)] ${t.kind === "error" ? "bg-late text-off" : "bg-ink text-off"}`}>{t.text}</div>
         ))}
       </div>
     </ToastContext.Provider>
@@ -179,7 +179,7 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
   }, [workspace, uid, loadTasks, loadNotifications])
 
   const memberName = useCallback((id: string | null | undefined) => {
-    if (!id) return '—'
+    if (!id) return ''
     return members.find(m => m.user_id === id)?.profile.name ?? 'Usuária removida'
   }, [members])
 
@@ -240,7 +240,7 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
       setParts(prev => prev.map(p => p.task_id === t.id && p.user_id === uid ? { ...p, completed_at: new Date().toISOString() } : p))
       const { data, error } = await supabase.rpc('complete_my_part', { p_task: t.id })
       if (error) { toast(errMsg(error), 'error'); loadTasks(t.workspace_id); return }
-      toast(data === 'concluida' ? 'Pendência das duas concluída' : 'Sua parte foi concluída — a outra foi avisada')
+      toast(data === 'concluida' ? 'Pendência das duas concluída' : 'Sua parte foi concluída. A outra foi avisada.')
     }
   }
   const refresh = async () => { if (workspace) { await loadTasks(workspace.id); await loadNotifications(workspace.id) } }

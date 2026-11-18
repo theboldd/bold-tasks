@@ -80,7 +80,7 @@ function PushCard() {
             ? <button className="btn btn-primary" disabled={busy} onClick={async () => { setBusy(true); const r = await enablePush(); setBusy(false); toast(r === 'ok' ? 'Notificações ativadas neste aparelho' : r === 'denied' ? 'Permissão negada pelo navegador' : 'Não foi possível ativar', r === 'ok' ? 'ok' : 'error'); refresh() }}>Ativar notificações</button>
             : <>
                 <span className="meta inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[.14em] text-ok"><span className="h-1.5 w-1.5 rounded-full bg-ok" />Ativadas neste aparelho</span>
-                <button className="btn btn-ghost" disabled={busy} onClick={async () => { setBusy(true); const { error } = await supabase.rpc('send_test_push'); setBusy(false); toast(error ? error.message : 'Teste enviado — deve chegar em segundos', error ? 'error' : 'ok') }}>Enviar teste</button>
+                <button className="btn btn-ghost" disabled={busy} onClick={async () => { setBusy(true); const { error } = await supabase.rpc('send_test_push'); setBusy(false); toast(error ? error.message : 'Teste enviado. Deve chegar em segundos.', error ? 'error' : 'ok') }}>Enviar teste</button>
                 <button className="btn btn-text" onClick={async () => { await disablePush(); refresh() }}>Desativar</button>
               </>}
         </div>
@@ -130,7 +130,7 @@ function GoogleCard() {
         <li>Copie o <strong>Endereço secreto no formato iCal</strong> e cole abaixo.</li>
       </ol>
       <input aria-label="Endereço secreto iCal" className="field mb-3 font-mono text-xs" placeholder="https://calendar.google.com/calendar/ical/.../private-.../basic.ics" value={url} onChange={e => setUrl(e.target.value)} />
-      <label className="mb-4 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 accent-[#3A0000]" checked={share} onChange={e => setShare(e.target.checked)} />
+      <label className="mb-4 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 accent-bordo" checked={share} onChange={e => setShare(e.target.checked)} />
         <span>Mostrar os títulos dos meus compromissos para a outra usuária <span className="text-mute">(desmarcado: ela vê apenas “Ocupada” nos seus horários)</span></span></label>
       <div className="flex flex-wrap items-center gap-2">
         <button className="btn btn-primary" disabled={busy || !url.trim()} onClick={save}>{busy ? 'Conectando…' : saved ? 'Salvar alterações' : 'Conectar agenda'}</button>

@@ -13,6 +13,7 @@ export function CompleteToggle({ task }: { task: Task }) {
   const myPart = task.is_shared ? partsOf(task.id).find(p => p.user_id === me.id) : null
   const half = task.is_shared && !done && !!myPart?.completed_at
   const [pop, setPop] = useState(false)
+  const [celebrate, setCelebrate] = useState(false)
   const prev = useRef(done || half)
   useEffect(() => { if ((done || half) && !prev.current) { setPop(true); const t = setTimeout(() => setPop(false), 500); return () => clearTimeout(t) } prev.current = done || half }, [done, half])
   const label = done ? `Reabrir “${task.title}”` : task.is_shared ? (half ? `Reabrir minha parte de “${task.title}”` : `Concluir minha parte de “${task.title}”`) : `Concluir “${task.title}”`
@@ -21,19 +22,35 @@ export function CompleteToggle({ task }: { task: Task }) {
       aria-label={label}
       title={task.needs_triage && !done ? 'Classifique a captura antes de concluir' : label.replace(/ “.*”$/, '')}
       disabled={task.needs_triage && !done}
-      onClick={e => { e.stopPropagation(); toggleDone(task) }}
-      className={`group/chk flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full border transition-all duration-200 disabled:opacity-40 ${pop ? 'done-pop' : ''} ${done ? 'border-ok bg-ok text-white' : half ? 'border-ok bg-ok-50 text-ok' : 'border-[#c9bfba] bg-transparent text-transparent hover:border-bordo hover:text-bordo/60'}`}>
-      <Check size={12} strokeWidth={2.6} className={done || half ? '' : 'opacity-0 transition-opacity group-hover/chk:opacity-100'} />
+      data-celebrate={celebrate || undefined}
+      onClick={e => {
+        e.stopPropagation()
+        if (celebrate) return
+        if (done || half) { toggleDone(task); return }
+        // efeito verde na hora do check; a pendência sai da lista logo depois
+        setCelebrate(true)
+        setTimeout(() => { toggleDone(task); setTimeout(() => setCelebrate(false), 300) }, 650)
+      }}
+      className={`group/chk relative -m-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full disabled:opacity-40`}>
+      <span className={`relative flex h-[22px] w-[22px] items-center justify-center rounded-full border-[1.5px] transition-all duration-200 ${pop || celebrate ? 'done-pop' : ''} ${done || celebrate ? 'border-ok bg-ok text-off' : half ? 'border-ok bg-ok-50 text-ok' : 'border-mute/50 bg-transparent text-transparent group-hover/chk:border-ok group-hover/chk:bg-ok-50 group-hover/chk:text-ok'}`}>
+        {celebrate && <span aria-hidden className="done-ring absolute inset-0 rounded-full border-2 border-ok" />}
+        <Check size={13} strokeWidth={2.8} className={done || half || celebrate ? '' : 'opacity-0 transition-opacity group-hover/chk:opacity-100'} />
+      </span>
     </button>
   )
 }
 
 function Who({ task, size = 26 }: { task: Task; size?: number }) {
   const { members, memberName, partsOf } = useWs()
-  if (task.is_shared) return <SharedAvatars members={members} parts={partsOf(task.id)} />
-  return task.assigned_to
-    ? <Avatar name={memberName(task.assigned_to)} idx={memberColorIndex(members, task.assigned_to)} size={size} />
-    : <span className="rounded-full border border-dashed border-[#cfc7bd]" style={{ width: size, height: size }} title="Sem responsável" />
+  const person = task.is_shared ? <SharedAvatars members={members} parts={partsOf(task.id)} />
+    : task.assigned_to ? <Avatar name={memberName(task.assigned_to)} idx={memberColorIndex(members, task.assigned_to)} size={size} /> : null
+  const team = task.is_team ? <TeamBadge size={size} /> : null
+  if (!person && !team) return <span className="rounded-full border border-dashed border-line" style={{ width: size, height: size }} title="Sem responsável" />
+  return <span className="flex shrink-0 items-center -space-x-1.5">{person}{team}</span>
+}
+
+export function TeamBadge({ size = 26 }: { size?: number }) {
+  return <span title="Equipe The Bold" className="meta inline-flex shrink-0 items-center justify-center rounded-full bg-bordo font-semibold text-off ring-2 ring-off" style={{ width: size, height: size, fontSize: size * 0.36 }}>TB</span>
 }
 
 export function TaskRow({ task, showAssignee = true }: { task: Task; showAssignee?: boolean }) {
@@ -41,12 +58,12 @@ export function TaskRow({ task, showAssignee = true }: { task: Task; showAssigne
   const { openTask } = useUI()
   const done = task.status === 'concluida'
   return (
-    <li data-testid="task-row" data-task-id={task.id} className={`group relative flex items-center gap-3 md:gap-4 border-b border-line px-1 md:px-2 py-3.5 cursor-pointer transition-colors hover:bg-paper/70 ${done ? 'opacity-70' : ''}`} onClick={() => openTask(task.id)}>
+    <li data-testid="task-row" data-task-id={task.id} className={`group relative flex items-center gap-3 md:gap-4 border-b border-line px-1 md:px-2 py-3.5 cursor-pointer transition-colors duration-300 hover:bg-paper/70 has-[[data-celebrate]]:bg-ok-50 ${done ? 'opacity-70' : ''}`} onClick={() => openTask(task.id)}>
       <span className={`absolute left-0 top-3 bottom-3 w-px transition-colors ${isOverdueOrLate(task) ? 'bg-late' : 'bg-transparent group-hover:bg-bordo/40'}`} />
       <span className="meta hidden w-8 shrink-0 text-right text-[10.5px] tracking-wider text-mute/80 md:block">{String(task.seq).padStart(3, '0')}</span>
       <CompleteToggle task={task} />
       <div className="min-w-0 flex-1">
-        <div className={`truncate text-[15px] transition-colors ${done ? 'text-mute line-through decoration-1' : 'group-hover:text-bordo'}`}>{task.title}</div>
+        <button type="button" data-testid="task-title" onClick={e => { e.stopPropagation(); openTask(task.id) }} className={`block max-w-full truncate text-left text-[15px] transition-colors group-has-[[data-celebrate]]:text-ok group-has-[[data-celebrate]]:line-through ${done ? 'text-mute line-through decoration-1' : 'group-hover:text-bordo'}`}>{task.title}</button>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-mute">
           {task.needs_triage ? <TriageBadge /> : <DayTimeChip task={task} />}
           <RolloverBadge task={task} />
@@ -54,6 +71,7 @@ export function TaskRow({ task, showAssignee = true }: { task: Task; showAssigne
           <DeadlineBadge task={task} />
           {!task.needs_triage && <span className="meta hidden text-[11px] lg:inline">{categoryLabel(task, memberName)}</span>}
           {task.is_shared && <span className="meta text-[9.5px] font-semibold uppercase tracking-[.16em] text-bordo">Das duas</span>}
+          {task.is_team && <span className="meta bg-bordo px-1.5 py-px text-[9px] font-semibold uppercase tracking-[.16em] text-off">The Bold</span>}
         </div>
       </div>
       {/* edição rápida (desktop) */}
@@ -65,7 +83,7 @@ export function TaskRow({ task, showAssignee = true }: { task: Task; showAssigne
         {!task.needs_triage && <input aria-label="Dia para fazer" title="Dia para fazer" type="date" className="meta w-[124px] border-b border-transparent bg-transparent px-1 py-1 text-[11.5px] hover:border-line focus:border-ink outline-none"
           value={task.scheduled_date ?? ''} onChange={e => e.target.value && updateTask(task.id, { scheduled_date: e.target.value })} />}
       </div>
-      {(showAssignee || task.is_shared) && <Who task={task} />}
+      {(showAssignee || task.is_shared || task.is_team) && <Who task={task} />}
     </li>
   )
 }
@@ -103,10 +121,10 @@ export function Kanban({ tasks }: { tasks: Task[] }) {
                 <article key={t.id} data-testid="kanban-card" data-task-id={t.id} draggable
                   onDragStart={e => e.dataTransfer.setData('text/task', t.id)}
                   onClick={() => openTask(t.id)}
-                  className="group cursor-pointer border border-line bg-paper p-3.5 transition-all duration-200 hover:-translate-y-px hover:border-[#cfc4bf] hover:shadow-[0_8px_20px_-14px_rgba(21,19,19,.35)]">
+                  className="group cursor-pointer border border-line bg-paper p-3.5 transition-all duration-300 hover:-translate-y-px hover:border-mute/40 hover:shadow-[0_8px_20px_-14px_rgba(21,19,19,.35)] has-[[data-celebrate]]:border-ok has-[[data-celebrate]]:bg-ok-50">
                   <div className="flex items-start gap-2.5">
                     <CompleteToggle task={t} />
-                    <p className={`text-[14px] leading-snug ${t.status === 'concluida' ? 'text-mute line-through' : 'group-hover:text-bordo'}`}>{t.title}</p>
+                    <button type="button" onClick={e => { e.stopPropagation(); openTask(t.id) }} className={`text-left text-[14px] leading-snug group-has-[[data-celebrate]]:text-ok group-has-[[data-celebrate]]:line-through ${t.status === 'concluida' ? 'text-mute line-through' : 'group-hover:text-bordo'}`}>{t.title}</button>
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -137,10 +155,10 @@ export function Kanban({ tasks }: { tasks: Task[] }) {
 export function MiniTask({ task, showDay = true }: { task: Task; showDay?: boolean }) {
   const { openTask } = useUI()
   return (
-    <li className="group flex cursor-pointer items-center gap-3 py-3" onClick={() => openTask(task.id)} data-testid="mini-task" data-task-id={task.id}>
+    <li className="group -mx-2 flex cursor-pointer items-center gap-3 px-2 py-3 transition-colors duration-300 has-[[data-celebrate]]:bg-ok-50" onClick={() => openTask(task.id)} data-testid="mini-task" data-task-id={task.id}>
       <CompleteToggle task={task} />
       <div className="min-w-0 flex-1">
-        <div className={`truncate text-[14px] transition-colors ${task.status === 'concluida' ? 'text-mute line-through' : 'group-hover:text-bordo'}`}>{task.title}</div>
+        <button type="button" onClick={e => { e.stopPropagation(); openTask(task.id) }} className={`block max-w-full truncate text-left text-[14px] transition-colors group-has-[[data-celebrate]]:text-ok group-has-[[data-celebrate]]:line-through ${task.status === 'concluida' ? 'text-mute line-through' : 'group-hover:text-bordo'}`}>{task.title}</button>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-mute">
           <DayTimeChip task={task} showDay={showDay} /><RolloverBadge task={task} /><PriorityTag priority={task.priority} /><DeadlineBadge task={task} />
           {task.status !== 'a_fazer' && task.status !== 'concluida' && <StatusPill status={task.status} />}
