@@ -8,7 +8,7 @@ const readCache = (k: string): CalCache | null => {
   try { const c = JSON.parse(localStorage.getItem(k) || 'null') as CalCache | null; return c && Date.now() - c.at < 12 * 3600e3 ? c : null } catch { return null }
 }
 
-/** Eventos do Google Agenda (pessoais + agência) no intervalo [from, to], atualizados a cada 5 min.
+/** Eventos do Google Agenda (pessoais + agência) no intervalo [from, to], atualizados a cada 3 min e ao voltar para o app.
  *  Mostra na hora a última leitura salva neste aparelho e atualiza em segundo plano. */
 export function useCalendarEvents(from: string, to: string, cacheKey?: string) {
   const key = cacheKey ?? `bt_cal_${from}_${to}`
@@ -34,7 +34,15 @@ export function useCalendarEvents(from: string, to: string, cacheKey?: string) {
       localStorage.setItem(key, JSON.stringify({ at: Date.now(), events: data.events ?? [], status: data.status ?? {}, agency: data.agency_status ?? {} }))
     } catch { /* armazenamento cheio */ }
   }, [from, to, key])
-  useEffect(() => { load(); const i = setInterval(() => load(), 5 * 60 * 1000); return () => clearInterval(i) }, [load])
+  useEffect(() => {
+    load()
+    let last = Date.now()
+    const tick = () => { if (Date.now() - last > 60 * 1000) { last = Date.now(); load() } }
+    const i = setInterval(() => { last = Date.now(); load() }, 3 * 60 * 1000)
+    const onVis = () => document.visibilityState === 'visible' && tick()
+    document.addEventListener('visibilitychange', onVis); window.addEventListener('focus', tick)
+    return () => { clearInterval(i); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('focus', tick) }
+  }, [load])
   return { events, status, agencyStatus, loading, loaded, reload: load }
 }
 

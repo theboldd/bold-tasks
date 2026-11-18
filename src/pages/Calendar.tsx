@@ -161,7 +161,7 @@ export function CalendarPage() {
       )}
       <p className="mt-3 text-xs text-mute">
         {mode === 'month' ? 'Arraste uma pendência para outro dia. Clique no número para ver o dia em horas.' : 'Arraste uma pendência para um horário livre da grade para definir até que horas ela deve ser feita. Clique duas vezes num horário para criar uma pendência ali.'}
-        {hasFeed && ' Compromissos do Google Agenda aparecem em cinza (atualizados a cada 15 min). Clique num compromisso para ver os detalhes.'}
+        {hasFeed && ' Compromissos do Google Agenda aparecem em cinza (atualizados automaticamente a cada poucos minutos). Clique num compromisso para ver os detalhes.'}
       </p>
       <Modal open={!!openEv} onClose={() => setOpenEv(null)} title={openEv?.title || 'Compromisso'}>
         {openEv && <EventDetails e={openEv} mine={openEv.owner_id === me.id} ownerName={openEv.source === 'agency' ? undefined : members.find(x => x.user_id === openEv.owner_id)?.profile.name} />}

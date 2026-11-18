@@ -1,5 +1,5 @@
 // Eventos do Google Agenda (link secreto iCal) das integrantes do workspace e da agenda da agência, no intervalo pedido.
-// Os links nunca vão para o navegador; a busca é feita no servidor, com cache de 15 minutos.
+// Os links nunca vão para o navegador; a busca é feita no servidor, com cache de 5 minutos.
 // O Google limita (429) a infraestrutura do Supabase, então a busca passa pelo /api/ics do BOLD TASKS (Vercel).
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import ICAL from 'npm:ical.js@2.1.0'
@@ -10,7 +10,7 @@ const cors = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 }
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, 'Content-Type': 'application/json' } })
-const TTL_MS = 15 * 60 * 1000
+const TTL_MS = 5 * 60 * 1000
 const PROXY = 'https://bold-tasks-umber.vercel.app/api/ics'
 
 type Ev = { owner_id: string | null; source: 'personal' | 'agency'; title: string; location: string | null; start: string; end: string; all_day: boolean; busy_only: boolean }

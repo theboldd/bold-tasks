@@ -139,7 +139,7 @@ function GoogleCard() {
         {saved && <button className="btn btn-text text-late" onClick={async () => { await supabase.from('calendar_feeds').delete().eq('user_id', me.id); setSaved(null); setUrl(''); setResult(''); toast('Agenda desconectada') }}>Desconectar</button>}
       </div>
       {result && <p className={`mt-3 text-sm ${result.startsWith('Conectado') ? 'text-ok' : 'text-late'}`} data-testid="google-result">{result}</p>}
-      <p className="mt-3 text-xs text-mute">O endereço fica guardado só para você e é lido pelo servidor; nunca é mostrado para a outra usuária. Atualização a cada 15 minutos.</p>
+      <p className="mt-3 text-xs text-mute">O endereço fica guardado só para você e é lido pelo servidor; nunca é mostrado para a outra usuária. Atualização automática a cada poucos minutos.</p>
     </section>
   )
 }
@@ -191,7 +191,7 @@ function AgencyCalendarCard() {
         {st?.configured && <button className="btn btn-text text-late" onClick={async () => { await supabase.rpc('set_agency_calendar', { p_ws: workspace.id, p_url: '' }); setSt(null); setResult(''); toast('Agenda da agência desconectada') }}>Desconectar</button>}
       </div>
       {result && <p className={`mt-3 text-sm ${result.startsWith('Conectada') ? 'text-ok' : 'text-late'}`}>{result}</p>}
-      <p className="mt-3 text-xs text-mute">O endereço fica guardado no servidor e nunca é mostrado no navegador. Atualização a cada 15 minutos.</p>
+      <p className="mt-3 text-xs text-mute">O endereço fica guardado no servidor e nunca é mostrado no navegador. Atualização automática a cada poucos minutos.</p>
     </section>
   )
 }
