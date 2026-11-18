@@ -6,7 +6,7 @@ import { useWs } from '../lib/store'
 import { useUI } from '../lib/ui'
 import { MONTHS_FULL, WEEKDAYS, addDaysISO, effectiveTime, firstName, isOverdue, isTimePassed, timeLabel, todayISO, weekStartISO } from '../lib/labels'
 import type { CalEvent, Task } from '../lib/types'
-import { PageHeader, Spinner, memberColorIndex } from '../components/ui'
+import { Modal, PageHeader, Spinner, memberColorIndex } from '../components/ui'
 
 const DOT = ['bg-bordo', 'bg-ink', 'bg-mute', 'bg-[#6b4a3a]']
 const CHIP = ['border-l-bordo', 'border-l-ink', 'border-l-mute', 'border-l-[#6b4a3a]']
@@ -38,6 +38,7 @@ function useCalendarEvents(from: string, to: string) {
 
 export function CalendarPage() {
   const { tasks, tasksLoaded, members, updateTask, me } = useWs()
+  const [openEv, setOpenEv] = useState<CalEvent | null>(null)
   const { openTask, openNew } = useUI()
   const today = todayISO()
   const [mode, setMode] = useState<Mode>(() => (window.innerWidth < 768 ? 'day' : 'week'))
@@ -79,9 +80,9 @@ export function CalendarPage() {
     </button>
   )
   const eventChip = (e: CalEvent, i: number) => (
-    <div key={`e${i}`} title={e.title} data-testid="cal-event" className={`truncate rounded-sm border border-line px-1.5 py-0.5 text-[11px] text-mute ${e.owner_id === me.id ? 'bg-paper' : 'bg-off italic'}`}>
+    <button type="button" key={`e${i}`} title={e.title} data-testid="cal-event" onClick={ev => { ev.stopPropagation(); setOpenEv(e) }} className={`block w-full truncate rounded-sm border border-line px-1.5 py-0.5 text-left text-[11px] text-mute transition hover:border-mute hover:text-ink ${e.owner_id === me.id ? 'bg-paper' : 'bg-off italic'}`}>
       {!e.all_day && <span className="mr-1">{hhmm(spMinutes(new Date(e.start)))}</span>}{e.title}
-    </div>
+    </button>
   )
 
   return (
@@ -148,12 +149,39 @@ export function CalendarPage() {
         <TimeGrid days={days} today={today} tasksOn={tasksOn} eventsOn={eventsOn} taskChip={taskChip} eventChip={eventChip}
           onDropTask={(id, d, min) => updateTask(id, min == null ? { scheduled_date: d } : { scheduled_date: d, due_time: hhmm(min), time_window: null })}
           onNew={(d, min) => openNew({ scheduled_date: d, due_time: min == null ? undefined : hhmm(min) })}
-          onOpen={openTask} me={me.id} />
+          onOpen={openTask} onEvent={setOpenEv} me={me.id} />
       )}
       <p className="mt-3 text-xs text-mute">
         {mode === 'month' ? 'Arraste uma pendência para outro dia. Clique no número para ver o dia em horas.' : 'Arraste uma pendência para um horário livre da grade para definir até que horas ela deve ser feita. Clique duas vezes num horário para criar uma pendência ali.'}
-        {hasFeed && ' Compromissos do Google Agenda aparecem em cinza (atualizados a cada 15 min).'}
+        {hasFeed && ' Compromissos do Google Agenda aparecem em cinza (atualizados a cada 15 min). Clique num compromisso para ver os detalhes.'}
       </p>
+      <Modal open={!!openEv} onClose={() => setOpenEv(null)} title={openEv?.title || 'Compromisso'}>
+        {openEv && <EventDetails e={openEv} mine={openEv.owner_id === me.id} ownerName={members.find(x => x.user_id === openEv.owner_id)?.profile.name} />}
+      </Modal>
+    </div>
+  )
+}
+
+function EventDetails({ e, mine, ownerName }: { e: CalEvent; mine: boolean; ownerName?: string }) {
+  const s = new Date(e.start), en = new Date(e.end)
+  const dayFmt = (d: Date) => new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: e.all_day ? 'UTC' : TZ }).format(d)
+  const lastAllDay = new Date(en.getTime() - 864e5)
+  const when = e.all_day
+    ? (e.end.slice(0, 10) > addDaysISO(e.start.slice(0, 10), 1) ? `${dayFmt(s)} até ${dayFmt(lastAllDay)}` : dayFmt(s)) + ' · dia inteiro'
+    : spDate(s) === spDate(en) || spMinutes(en) === 0
+      ? `${dayFmt(s)} · ${hhmm(spMinutes(s))}–${hhmm(spMinutes(en))}`
+      : `${dayFmt(s)}, ${hhmm(spMinutes(s))} até ${dayFmt(en)}, ${hhmm(spMinutes(en))}`
+  const dur = e.all_day ? null : Math.round((en.getTime() - s.getTime()) / 60000)
+  const [yy, mm, dd] = (e.all_day ? e.start.slice(0, 10) : spDate(s)).split('-')
+  return (
+    <div className="space-y-4 text-sm" data-testid="event-details">
+      <dl className="grid grid-cols-[110px_1fr] gap-y-3">
+        <dt className="eyebrow pt-0.5">Quando</dt><dd className="first-letter:uppercase">{when}</dd>
+        {dur != null && <><dt className="eyebrow pt-0.5">Duração</dt><dd className="meta">{dur >= 60 ? `${Math.floor(dur / 60)}h${dur % 60 ? String(dur % 60).padStart(2, '0') : ''}` : `${dur} min`}</dd></>}
+        <dt className="eyebrow pt-0.5">Agenda</dt><dd>{mine ? 'Sua agenda do Google' : `Agenda de ${firstName(ownerName) || 'outra usuária'}`}</dd>
+      </dl>
+      {!mine && e.busy_only && <p className="border-l-2 border-line pl-3 text-xs text-mute">Ela optou por mostrar só que está ocupada nesse horário; o título do compromisso não é compartilhado.</p>}
+      {mine && <a className="btn btn-ghost inline-flex" href={`https://calendar.google.com/calendar/r/day/${yy}/${Number(mm)}/${Number(dd)}`} target="_blank" rel="noreferrer">Abrir no Google Agenda ↗</a>}
     </div>
   )
 }
@@ -174,11 +202,11 @@ function layout(items: { key: string; start: number; end: number; node: React.Re
   return out
 }
 
-function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropTask, onNew, onOpen, me }: {
+function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropTask, onNew, onOpen, onEvent, me }: {
   days: string[]; today: string; me: string
   tasksOn: (d: string) => Task[]; eventsOn: (d: string) => CalEvent[]
   taskChip: (t: Task) => React.ReactNode; eventChip: (e: CalEvent, i: number) => React.ReactNode
-  onDropTask: (id: string, d: string, min: number | null) => void; onNew: (d: string, min: number | null) => void; onOpen: (id: string) => void
+  onDropTask: (id: string, d: string, min: number | null) => void; onNew: (d: string, min: number | null) => void; onOpen: (id: string) => void; onEvent: (e: CalEvent) => void
 }) {
   const [hover, setHover] = useState<{ d: string; min: number } | null>(null)
   const [nowMin, setNowMin] = useState(spMinutes(new Date()))
@@ -217,9 +245,9 @@ function TimeGrid({ days, today, tasksOn, eventsOn, taskChip, eventChip, onDropT
               const s = spDate(new Date(e.start)) === d ? spMinutes(new Date(e.start)) : 0
               const en = spDate(new Date(e.end)) === d ? spMinutes(new Date(e.end)) : 24 * 60
               return { key: `e${i}`, start: s, end: Math.max(en, s + 15), node: (
-                <div title={`${e.title} · ${hhmm(s)}–${hhmm(en)}`} data-testid="grid-event" className={`h-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-[11px] leading-tight ${e.owner_id === me ? 'border-line bg-[#ece8e2] text-ink/80' : 'border-dashed border-[#d6cfc6] bg-off text-mute italic'}`}>
+                <button type="button" onClick={() => onEvent(e)} title={`${e.title} · ${hhmm(s)}–${hhmm(en)}`} data-testid="grid-event" className={`block h-full w-full overflow-hidden rounded-sm border px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:shadow-sm ${e.owner_id === me ? 'border-line bg-[#ece8e2] text-ink/80 hover:border-mute' : 'border-dashed border-[#d6cfc6] bg-off text-mute italic'}`}>
                   <div className="font-medium truncate">{e.title}</div><div className="text-[10px] text-mute">{hhmm(s)}–{hhmm(en)}</div>
-                </div>) }
+                </button>) }
             }),
             ...tasksOn(d).filter(t => effectiveTime(t)).map(t => {
               const [hh, mm] = effectiveTime(t)!.split(':').map(Number)
