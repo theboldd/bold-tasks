@@ -20,21 +20,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const useAuth = () => useContext(AuthContext)
 
 /* ================= Toasts ================= */
-interface Toast { id: number; text: string; kind: 'ok' | 'error' }
-const ToastContext = createContext<(text: string, kind?: 'ok' | 'error') => void>(() => {})
+export interface ToastAction { label: string; onClick: () => void }
+interface Toast { id: number; text: string; kind: 'ok' | 'error'; action?: ToastAction }
+const ToastContext = createContext<(text: string, kind?: 'ok' | 'error', action?: ToastAction) => void>(() => {})
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
-  const push = useCallback((text: string, kind: 'ok' | 'error' = 'ok') => {
+  const push = useCallback((text: string, kind: 'ok' | 'error' = 'ok', action?: ToastAction) => {
     const id = Date.now() + Math.random()
-    setToasts(t => [...t, { id, text, kind }])
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3800)
+    setToasts(t => [...t.filter(x => !(action && x.action)), { id, text, kind, action }])
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), action ? 7000 : 3800)
   }, [])
   return (
     <ToastContext.Provider value={push}>
       {children}
       <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[80] flex flex-col gap-2 items-center pointer-events-none">
         {toasts.map(t => (
-          <div key={t.id} role="status" className={`rise-in pointer-events-auto rounded-sm px-4 py-2.5 text-[13px] shadow-[0_14px_40px_-18px_rgba(21,19,19,.6)] ${t.kind === "error" ? "bg-late text-off" : "bg-ink text-off"}`}>{t.text}</div>
+          <div key={t.id} role="status" className={`rise-in pointer-events-auto flex items-center gap-4 rounded-full px-5 py-2.5 text-[13px] shadow-[0_14px_40px_-18px_rgba(21,19,19,.6)] ${t.kind === "error" ? "bg-late text-off" : "bg-ink text-off"}`}>
+            <span>{t.text}</span>
+            {t.action && <button data-testid="toast-action" className="meta -my-1 rounded-full border border-off/30 px-3 py-1 text-[11px] font-semibold uppercase tracking-[.12em] transition hover:bg-off/15" onClick={() => { t.action!.onClick(); setToasts(x => x.filter(y => y.id !== t.id)) }}>{t.action.label}</button>}
+          </div>
         ))}
       </div>
     </ToastContext.Provider>
@@ -59,6 +63,7 @@ interface WorkspaceCtx {
   updateTask: (id: string, patch: TaskPatch) => Promise<boolean>
   deleteTask: (id: string) => Promise<boolean>
   markRead: (id: string) => Promise<void>
+  markUnread: (id: string) => Promise<void>
   markAllRead: () => Promise<void>
   refresh: () => Promise<void>
   realtimeStatus: string
@@ -221,6 +226,11 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
     await supabase.from('notifications').update({ is_read: true }).eq('id', id)
   }
+  const markUnread = async (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: false } : n))
+    const { error } = await supabase.from('notifications').update({ is_read: false }).eq('id', id)
+    if (error) toast(errMsg(error), 'error')
+  }
   const markAllRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
     await supabase.rpc('mark_all_notifications_read')
@@ -230,7 +240,13 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
     t.is_shared ? parts.some(p => p.task_id === t.id && p.user_id === userId) || members.some(m => m.user_id === userId) : t.assigned_to === userId,
   [parts, members, uid])
   const toggleDone = async (t: Task) => {
-    if (!t.is_shared) { await updateTask(t.id, { status: t.status === 'concluida' ? 'a_fazer' : 'concluida' }); return }
+    if (!t.is_shared) {
+      if (t.status === 'concluida') { await updateTask(t.id, { status: 'a_fazer' }); return }
+      const prev = t.status
+      const ok = await updateTask(t.id, { status: 'concluida' })
+      if (ok !== false) toast('Pendência concluída', 'ok', { label: 'Desfazer', onClick: () => { updateTask(t.id, { status: prev }).then(() => toast('Conclusão desfeita')) } })
+      return
+    }
     const mine = parts.find(p => p.task_id === t.id && p.user_id === uid)
     if (t.status === 'concluida' || mine?.completed_at) {
       setParts(prev => prev.map(p => p.task_id === t.id && p.user_id === uid ? { ...p, completed_at: null } : p))
@@ -240,7 +256,13 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
       setParts(prev => prev.map(p => p.task_id === t.id && p.user_id === uid ? { ...p, completed_at: new Date().toISOString() } : p))
       const { data, error } = await supabase.rpc('complete_my_part', { p_task: t.id })
       if (error) { toast(errMsg(error), 'error'); loadTasks(t.workspace_id); return }
-      toast(data === 'concluida' ? 'Pendência das duas concluída' : 'Sua parte foi concluída. A outra foi avisada.')
+      toast(data === 'concluida' ? 'Pendência das duas concluída' : 'Sua parte foi concluída. A outra foi avisada.', 'ok', {
+        label: 'Desfazer', onClick: async () => {
+          setParts(prev => prev.map(p => p.task_id === t.id && p.user_id === uid ? { ...p, completed_at: null } : p))
+          const { error } = await supabase.rpc('reopen_my_part', { p_task: t.id })
+          if (error) { toast(errMsg(error), 'error'); loadTasks(t.workspace_id) } else toast('Conclusão desfeita')
+        },
+      })
     }
   }
   const refresh = async () => { if (workspace) { await loadTasks(workspace.id); await loadNotifications(workspace.id) } }
@@ -253,7 +275,7 @@ export function WorkspaceProvider({ children, fallback }: { children: ReactNode;
     me, workspace, workspaces,
     switchWorkspace: (id) => { localStorage.setItem('bt_ws', id); setWsId(id) },
     members, memberName, other, tasks, tasksLoaded, notifications,
-    createTask, quickCapture, updateTask, deleteTask, markRead, markAllRead, refresh, realtimeStatus,
+    createTask, quickCapture, updateTask, deleteTask, markRead, markUnread, markAllRead, refresh, realtimeStatus,
     parts, partsOf, isMine, toggleDone,
   }
   return <WsContext.Provider value={value}>{children}</WsContext.Provider>

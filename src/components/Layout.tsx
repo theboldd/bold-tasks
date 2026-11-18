@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Bell, CalendarDays, Monitor, Moon, Sun, Clock3, Home, Inbox, ListTodo, LogOut, Plus, Search, Settings, User, Users, Building2, Menu, X, History } from 'lucide-react'
+import { Bell, CalendarDays, Mail, MailOpen, Monitor, Moon, Sun, Clock3, Home, Inbox, ListTodo, LogOut, Plus, Search, Settings, User, Users, Building2, Menu, X, History } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useWs } from '../lib/store'
 import { UIContext } from '../lib/ui'
@@ -9,6 +9,7 @@ import { TaskFormModal, type NewTaskDefaults } from './TaskFormModal'
 import { TaskDrawer } from './TaskDrawer'
 import { Avatar, memberColorIndex } from './ui'
 import { useTheme, type ThemePref } from '../lib/theme'
+import { UpdateBanner } from './UpdateBanner'
 
 export function Layout({ children }: { children: ReactNode }) {
   const { me, other, tasks, members, workspace, workspaces, switchWorkspace, isMine } = useWs()
@@ -68,35 +69,30 @@ export function Layout({ children }: { children: ReactNode }) {
 
   const sidebar = (
     <nav className="flex h-full flex-col" aria-label="Menu principal">
-      <div className="px-7 pt-8 pb-7">
-        <div className="display text-[2.35rem] font-semibold leading-none tracking-tight text-cream">BOLD</div>
-        <div className="meta mt-1.5 text-[10px] font-semibold uppercase tracking-[.42em] text-cream/60">Tasks</div>
-        <div className="mt-5 h-px w-10 bg-cream/30" />
-        <p className="mt-4 max-w-[12rem] text-[12px] leading-relaxed text-cream/50">Central de execução da The Bold.</p>
+      <div className="px-6 pt-7 pb-8">
+        <div className="display text-[2.1rem] font-semibold leading-none tracking-tight text-cream">BOLD</div>
+        <div className="font-serif -mt-0.5 text-[1.35rem] italic text-cream/70">tasks</div>
       </div>
-      <ul className="flex-1 overflow-y-auto px-4">
-        {nav.filter(n => !(n.hideIfZero && !n.count)).map((n, i) => (
+      <ul className="flex-1 space-y-0.5 overflow-y-auto px-3">
+        {nav.filter(n => !(n.hideIfZero && !n.count)).map(n => (
           <li key={n.to}>
-            <NavLink to={n.to} end={n.end} className={({ isActive }) => `group relative flex items-center gap-3 py-2.5 pl-4 pr-2 text-[13.5px] transition-colors ${isActive ? 'text-cream' : 'text-cream/55 hover:text-cream'}`}>
-              {({ isActive }) => <>
-                <span className={`absolute left-0 top-1/2 h-4 w-px -translate-y-1/2 transition-all ${isActive ? 'bg-cream' : 'bg-transparent group-hover:bg-cream/30'}`} />
-                <span className="meta w-5 text-[10px] tracking-wider text-cream/35">{String(i + 1).padStart(2, '0')}</span>
-                <span className="flex-1 truncate">{n.label}</span>
-                {!!n.count && <span className={`meta text-[11px] tabular-nums ${n.to === '/a-classificar' ? 'text-[#e8cfa8] font-semibold' : 'text-cream/45'}`}>{n.count}</span>}
-              </>}
+            <NavLink to={n.to} end={n.end} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] transition ${isActive ? 'bg-cream/10 text-cream' : 'text-cream/65 hover:bg-cream/5 hover:text-cream'}`}>
+              <n.icon size={17} strokeWidth={1.6} />
+              <span className="flex-1 truncate">{n.label}</span>
+              {!!n.count && <span className={`text-xs tabular-nums ${n.to === '/a-classificar' ? 'rounded-full bg-[#e8dcc3] px-1.5 font-semibold text-[#3A0000]' : 'text-cream/50'}`}>{n.count}</span>}
             </NavLink>
           </li>
         ))}
       </ul>
-      <div className="mx-4 border-t border-cream/15 py-3">
+      <div className="space-y-0.5 border-t border-cream/10 p-3">
         {workspaces.length > 1 && (
-          <select aria-label="Workspace" className="mb-2 w-full border border-cream/15 bg-transparent px-3 py-2 text-[13px] text-cream/80" value={workspace.id} onChange={e => { switchWorkspace(e.target.value); navigate('/') }}>
+          <select aria-label="Workspace" className="mb-2 w-full rounded-xl border border-cream/15 bg-transparent px-3 py-2 text-[13px] text-cream/80" value={workspace.id} onChange={e => { switchWorkspace(e.target.value); navigate('/') }}>
             {workspaces.map(w => <option key={w.id} value={w.id} className="text-ink">{w.name}</option>)}
           </select>
         )}
         <ThemeSwitch />
-        <NavLink to="/configuracoes" className={({ isActive }) => `flex items-center gap-3 py-2 pl-4 text-[13px] ${isActive ? 'text-cream' : 'text-cream/55 hover:text-cream'}`}><Settings size={15} strokeWidth={1.5} />Configurações</NavLink>
-        <div className="mt-1 flex items-center gap-3 py-2 pl-3">
+        <NavLink to="/configuracoes" className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${isActive ? 'bg-cream/10 text-cream' : 'text-cream/65 hover:bg-cream/5 hover:text-cream'}`}><Settings size={17} strokeWidth={1.6} />Configurações</NavLink>
+        <div className="flex items-center gap-3 px-3 py-2.5">
           <Avatar name={me.name} idx={memberColorIndex(members, me.id) === 0 ? 1 : 0} size={30} />
           <div className="min-w-0 flex-1"><div className="truncate text-[13px] text-cream">{me.name}</div><div className="meta truncate text-[10px] uppercase tracking-[.16em] text-cream/40">{workspace.name}</div></div>
           <button aria-label="Sair" title="Sair" className="p-1 text-cream/50 hover:text-cream" onClick={() => supabase.auth.signOut()}><LogOut size={16} strokeWidth={1.5} /></button>
@@ -107,8 +103,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <UIContext.Provider value={{ openTask, openNew }}>
+      <UpdateBanner />
       <div className="flex min-h-full">
-        <aside className="fixed inset-y-0 left-0 hidden w-[248px] bg-brand lg:block">{sidebar}</aside>
+        <aside className="fixed inset-y-0 left-0 hidden w-64 bg-brand lg:block">{sidebar}</aside>
         {menuOpen && (
           <div className="fixed inset-0 z-[58] bg-ink/40 lg:hidden fade-in" onClick={() => setMenuOpen(false)}>
             <aside className="relative h-full w-72 bg-brand slide-in" onClick={e => e.stopPropagation()}>
@@ -117,7 +114,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </aside>
           </div>
         )}
-        <div className="flex min-w-0 flex-1 flex-col lg:pl-[248px]">
+        <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
           <header className="sticky top-0 z-40 flex items-center gap-3 border-b border-line bg-off/92 px-4 md:px-10 py-3 backdrop-blur">
             <button className="lg:hidden -ml-1 p-1.5" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={21} strokeWidth={1.5} /></button>
             <span className="lg:hidden display mr-1 text-xl font-semibold text-bordo">BOLD</span>
@@ -150,16 +147,16 @@ function GlobalSearch() {
       const p = new URLSearchParams(); if (q.trim()) p.set('q', q.trim()); p.set('status', '')
       navigate(`/pendencias?${p.toString()}`)
     }}>
-      <Search size={15} strokeWidth={1.6} className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 text-mute" />
+      <Search size={16} strokeWidth={1.6} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-mute" />
       <input id="global-search" aria-label="Busca global" value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar pendências"
-        className="field-line w-full py-2 pl-7 pr-8 text-[14px]" />
-      <kbd className="meta pointer-events-none absolute right-1 top-1/2 hidden -translate-y-1/2 border border-line px-1.5 text-[10px] text-mute md:block">/</kbd>
+        className="w-full rounded-full border border-line bg-paper py-2.5 pl-11 pr-10 text-[14px] outline-none transition focus:border-bordo focus:shadow-[0_0_0_3px_rgba(58,0,0,.07)]" />
+      <kbd className="meta pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 text-[11px] text-mute md:block">/</kbd>
     </form>
   )
 }
 
 function NotificationBell() {
-  const { notifications, markRead, markAllRead, memberName } = useWs()
+  const { notifications, markRead, markUnread, markAllRead, memberName } = useWs()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const [, setParams] = useSearchParams()
@@ -185,8 +182,8 @@ function NotificationBell() {
           <ul className="max-h-[60vh] overflow-y-auto">
             {notifications.length === 0 && <li className="px-5 py-12 text-center"><div className="display text-xl italic text-bordo">Nada por aqui</div><p className="mt-1 text-sm text-mute">Avisos e lembretes aparecem neste espaço.</p></li>}
             {notifications.map(n => (
-              <li key={n.id} data-testid="notif-item">
-                <button className={`flex w-full gap-3 border-b border-line px-5 py-3.5 text-left transition hover:bg-off/70 ${n.is_read ? 'opacity-55' : ''}`} onClick={() => {
+              <li key={n.id} data-testid="notif-item" className={`group/n relative border-b border-line transition hover:bg-off/70 ${n.is_read ? 'opacity-60 hover:opacity-100' : ''}`}>
+                <button className="flex w-full gap-3 px-5 py-3.5 pr-12 text-left" onClick={() => {
                   markRead(n.id); setOpen(false)
                   if (n.task_id) { const p = new URLSearchParams(window.location.search); p.set('t', n.task_id); setParams(p) }
                 }}>
@@ -196,6 +193,11 @@ function NotificationBell() {
                     {n.message && <span className="mt-0.5 block truncate text-[13px] text-mute">{n.message}</span>}
                     <span className="meta mt-1 block text-[10.5px] uppercase tracking-[.12em] text-mute">{n.actor_id ? `${firstName(memberName(n.actor_id))} · ` : ''}{timeAgo(n.created_at)}</span>
                   </span>
+                </button>
+                <button data-testid="notif-toggle-read" aria-label={n.is_read ? 'Marcar como não lida' : 'Marcar como lida'} title={n.is_read ? 'Marcar como não lida' : 'Marcar como lida'}
+                  onClick={() => n.is_read ? markUnread(n.id) : markRead(n.id)}
+                  className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-mute opacity-100 transition hover:bg-line/70 hover:text-ink md:opacity-0 md:group-hover/n:opacity-100 focus:opacity-100">
+                  {n.is_read ? <Mail size={15} strokeWidth={1.6} /> : <MailOpen size={15} strokeWidth={1.6} />}
                 </button>
               </li>
             ))}
@@ -210,10 +212,10 @@ function ThemeSwitch() {
   const [pref, setPref] = useTheme()
   const opts: { v: ThemePref; label: string; Icon: typeof Sun }[] = [{ v: 'system', label: 'Sistema', Icon: Monitor }, { v: 'light', label: 'Claro', Icon: Sun }, { v: 'dark', label: 'Escuro', Icon: Moon }]
   return (
-    <div className="mb-2 ml-4 inline-flex border border-cream/15" role="radiogroup" aria-label="Tema" data-testid="theme-switch">
+    <div className="mb-1 ml-3 inline-flex overflow-hidden rounded-full border border-cream/15" role="radiogroup" aria-label="Tema" data-testid="theme-switch">
       {opts.map(({ v, label, Icon }) => (
         <button key={v} role="radio" aria-checked={pref === v} title={label} aria-label={`Tema ${label.toLowerCase()}`} onClick={() => setPref(v)}
-          className={`flex h-7 w-8 items-center justify-center transition-colors ${pref === v ? 'bg-cream/15 text-cream' : 'text-cream/45 hover:text-cream'}`}>
+          className={`flex h-7 w-9 items-center justify-center transition-colors ${pref === v ? 'bg-cream/15 text-cream' : 'text-cream/45 hover:text-cream'}`}>
           <Icon size={13} strokeWidth={1.6} />
         </button>
       ))}
