@@ -38,6 +38,12 @@ export function Dashboard() {
     const myPartDone = (t: Task) => t.is_shared && !!partsOf(t.id).find(p => p.user_id === me.id)?.completed_at
     return {
       open,
+      // indicadores pessoais: só as minhas + as juntas em que minha parte ainda falta
+      myOpen: open.filter(t => isMine(t, me.id) && !myPartDone(t)),
+      myOverdue: open.filter(t => isMine(t, me.id) && !myPartDone(t) && isOverdue(t, today)),
+      myDoneWeek: tasks.filter(t => isMine(t, me.id) && (t.is_shared
+        ? (() => { const at = partsOf(t.id).find(p => p.user_id === me.id)?.completed_at; return !!at && todayISO(new Date(at)) >= ws })()
+        : t.status === 'concluida' && !!t.completed_at && todayISO(new Date(t.completed_at)) >= ws)).length,
       mine: open.filter(t => isMine(t, me.id)),
       other: other ? open.filter(t => isMine(t, other.user_id)) : [],
       overdue: open.filter(t => isOverdue(t, today)),
@@ -78,11 +84,11 @@ export function Dashboard() {
                   {rolled > 0 && <>, {rolled} {rolled === 1 ? 'veio' : 'vieram'} de dias anteriores</>}
                   {passed > 0 && <>, <span className="text-late">{passed} já {passed === 1 ? 'passou' : 'passaram'} do horário</span></>}.
                   {' '}O que não for concluído hoje passa para amanhã automaticamente.</>
-              : <>Seu dia está livre. {s.open.length ? `Há ${s.open.length} ${s.open.length === 1 ? 'pendência aberta' : 'pendências abertas'} no workspace — bom momento para adiantar.` : 'Nenhuma pendência aberta no workspace.'}</>}
+              : <>Seu dia está livre. {s.myOpen.length ? `Você tem ${s.myOpen.length} ${s.myOpen.length === 1 ? 'pendência aberta' : 'pendências abertas'} em outros dias — bom momento para adiantar.` : 'Nenhuma pendência sua em aberto.'}</>}
           </p>
-          {(s.overdue.length > 0 || s.triage.length > 0) && (
+          {(s.myOverdue.length > 0 || s.triage.length > 0) && (
             <div className="mt-6 flex flex-col items-start gap-2 text-[14px]">
-              {s.overdue.length > 0 && <Link to="/pendencias?overdue=1" className="group inline-flex items-center gap-2 border-l-2 border-late pl-3 text-late"><span><strong>{s.overdue.length}</strong> com prazo final vencido</span><ArrowRight size={14} className="transition group-hover:translate-x-0.5" /></Link>}
+              {s.myOverdue.length > 0 && <Link to="/minhas?overdue=1" className="group inline-flex items-center gap-2 border-l-2 border-late pl-3 text-late"><span><strong>{s.myOverdue.length}</strong> com prazo final vencido</span><ArrowRight size={14} className="transition group-hover:translate-x-0.5" /></Link>}
               {s.triage.length > 0 && <Link to="/a-classificar" className="group inline-flex items-center gap-2 border-l-2 border-wait pl-3 text-wait"><span><strong>{s.triage.length}</strong> captura(s) aguardando classificação</span><ArrowRight size={14} className="transition group-hover:translate-x-0.5" /></Link>}
             </div>
           )}
@@ -98,9 +104,9 @@ export function Dashboard() {
 
       {/* ===== Indicadores ===== */}
       <section aria-label="Indicadores" className="grid grid-cols-2 border-y border-line md:grid-cols-4">
-        <Kpi to="/pendencias" label="Pendências abertas" value={s.open.length} testid="kpi-Abertas" />
-        <Kpi to="/pendencias?overdue=1" label="Atrasadas" value={s.overdue.length} tone={s.overdue.length ? 'late' : ''} testid="kpi-Atrasadas" />
-        <Kpi to="/pendencias?status=concluida&sort=created" label="Concluídas na semana" value={s.doneWeek} tone="ok" testid="kpi-Concluídas na semana" />
+        <Kpi to="/minhas" label="Minhas abertas" value={s.myOpen.length} testid="kpi-Abertas" />
+        <Kpi to="/minhas?overdue=1" label="Atrasadas" value={s.myOverdue.length} tone={s.myOverdue.length ? 'late' : ''} testid="kpi-Atrasadas" />
+        <Kpi to="/minhas?status=concluida&sort=created" label="Concluídas na semana" value={s.myDoneWeek} tone="ok" testid="kpi-Concluídas na semana" />
         <div className="col-span-2 border-t border-line px-1 py-5 md:col-span-1 md:border-t-0 md:border-l md:px-6" data-testid="kpi-responsavel">
           <div className="eyebrow mb-3">Por responsável</div>
           <ul className="space-y-2.5">
