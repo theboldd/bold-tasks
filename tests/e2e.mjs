@@ -238,7 +238,9 @@ await step('minhas pendências e da outra (nomes dinâmicos)', async () => {
 
 await step('calendário mostra prazos', async () => {
   await v.page.goto(BASE + '/calendario')
-  await v.page.getByTestId(`cal-day-${tomorrow}`).getByTestId('cal-chip').filter({ hasText: T1b }).waitFor({ timeout: 8000 })
+  await v.page.getByRole('button', { name: 'Mês' }).click()
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
+  await v.page.getByTestId(`cal-day-${today}`).getByTestId('cal-chip').filter({ hasText: T1b }).waitFor({ timeout: 8000 })
   ok('calendário mostra prazos', true)
   await v.page.screenshot({ path: '/vercel/e2e/04-calendario.png', fullPage: true })
 })
